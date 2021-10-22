@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDART 20)
 set(CMAKE_CXX_STANDART_REQUIRED ON)
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -msse4.2" CACHE STRING "Comment" FORCE)  #TODO do smth about -msse4.2
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -std=c11 -msse4.2" CACHE STRING "Comment" FORCE)  #TODO do smth about -msse4.2
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -D NDEBUG" CACHE STRING "Comment" FORCE)
 set(CMAKE_CXX_FLAGS_SANITIZER "${CMAKE_CXX_FLAGS} -Wpedantic -Wall -Wextra -Wformat=2 -fsanitize=address,undefined -g" CACHE STRING "Comment" FORCE)
 set(CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS} -D NDEBUG -fprofile-instr-generate -fcoverage-mapping" CACHE STRING "Comment" FORCE)
@@ -44,13 +44,13 @@ set_target_properties(gmock_main PROPERTIES FOLDER extern)
 
 enable_testing()
 
-add_executable(interpreter main.cpp ginterpreter.h ginterpreter.cpp)
+add_executable(interpreter main-interpreter.cpp ginterpreter.h ginterpreter.cpp)
+add_executable(assembler main-assembler.cpp gassembly.h gassembly.cpp)
 
 target_link_libraries(
     interpreter
     gtest_main
 )
-
 
 include(GoogleTest)
 #gtest_discover_tests(test-gqsort)

@@ -1,22 +1,17 @@
 #ifndef GINTERPRETER_H
 #define GINTERPRETER_H
 
+#include "gconfig.h"
+#include "gopcodes.h"
+
 typedef int GINTERPRETER_TYPE;
 
 #define FULL_DEBUG
-typedef GINTERPRETER_TYPE STACK_TYPE;
+
 #include "gstack.h"
 
 static const GINTERPRETER_TYPE GINTERPRETER_BUFLEN = 64;
 
-enum gcommand {
-    gpush,
-    gpop,
-    gmul,
-    gadd,
-    gsub,
-    gout
-};
 
 struct ginterpreter {
     stack Stack;
@@ -39,6 +34,7 @@ void ginterpreter_mul(ginterpreter *interpreter);
 
 void ginterpreter_out(ginterpreter *interpreter);
 
-void ginterpreter_run(ginterpreter *interpreter, const char *buffer);
+void ginterpreter_runFromFile(ginterpreter *interpreter, FILE *in);
+
 
 #endif /* GINTERPRETER_H */
