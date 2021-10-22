@@ -1,5 +1,13 @@
-#include "interpreter.h"
+#include "ginterpreter.h"
 
 int main() {
-    printf("Hello world of capybaras!\n");
+    ginterpreter inter;
+    ginterpreter_ctor(&inter);
+    ginterpreter_run(&inter, "push 12");
+    ginterpreter_run(&inter, "push 13");
+    ginterpreter_run(&inter, "push 14");
+    ginterpreter_run(&inter, "add");
+    ginterpreter_run(&inter, "mul");
+    ginterpreter_run(&inter, "out");
+    stack_dump(&inter.Stack);
 }

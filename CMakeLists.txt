@@ -44,7 +44,7 @@ set_target_properties(gmock_main PROPERTIES FOLDER extern)
 
 enable_testing()
 
-add_executable(interpreter main.cpp interpreter.h interpreter.cpp)
+add_executable(interpreter main.cpp ginterpreter.h ginterpreter.cpp)
 
 target_link_libraries(
     interpreter
