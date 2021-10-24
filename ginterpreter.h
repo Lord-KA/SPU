@@ -36,5 +36,4 @@ void ginterpreter_out(ginterpreter *interpreter);
 
 void ginterpreter_runFromFile(ginterpreter *interpreter, FILE *in);
 
-
 #endif /* GINTERPRETER_H */

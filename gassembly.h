@@ -12,8 +12,11 @@ struct gassembly {
 
 } typedef gassembly;
 
+void getline(char *buffer, size_t buflen, FILE *in);
     
 void gassembly_assembleFromLine(const char *buffer, FILE *out);
+
+void gassembly_assembleFromFile(FILE *in, FILE *out);
 
 void gassembly_disassembleFromFile(FILE *in, FILE *out);
 
