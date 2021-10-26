@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
         }
     }
     if (fileName != NULL) {
-        out = fopen(fileName, "w");
+        out = fopen(fileName, "w");         //TODO check fopen
     }
 
     // printf("mode = %d\n", mode);
