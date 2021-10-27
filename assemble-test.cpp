@@ -37,6 +37,7 @@ int main() {
         printf("status = %d", status);
     */
 
+    /*
     char line_1[] = "mov ax bx ; HELLO WORLD, MOTHERFUCKER!";
     char line_2[] = "mov [ax + bx] [[bx * cx]] ; HELLO WORLD, MOTHERFUCKER!";
     char line_3[] = "mov [[ax + bx]] [[bx * cx]] ; HELLO WORLD, MOTHERFUCKER!";
@@ -45,5 +46,18 @@ int main() {
 
     char *line = line_4;
     gassembly_assembleFromLine(line, stdout);
+    */
+
+    char buffer_1[] = "[abs + 13 - 13f * 93] * 10 31";
+    char buffer_2[] = "abs * 10 [1sdf + 19 * ksdb + 13]";
+    char buffer_3[] = "[abs + * 10 w1";
+    char buffer_4[] = "[ax] * 10 rx";
+    char buffer_5[] = "[0xc * ax + [0x9 + ex] * dx] * 0xa + [bx]";
+    char buffer_6[] = "179";
+    char *buffer = buffer_6;
+
+    gassembly_putOperand(buffer, stdout);
+    // int status = gassembly_getOperand(stdin, stdout);
+    // printf("\ngetOperand status = %d\n", status);
 }
 

@@ -92,24 +92,24 @@ int gassembly_putOperand(const char *operand, FILE *out)
 
     if (strIsInteger(operand)) {
         /* Literal case */                     
-        format.first_isMemCall  = 0;
-        format.first_isRegister = 0;
-        format.first_calculation = gCalc_none;
-        // fwrite(&format, sizeof(format), 1, out);
-        fprintf(out, "|LIT_FORM|");
+        format.isMemCall  = 0;
+        format.isRegister = 0;
+        format.calculation = gCalc_none;
+        fwrite(&format, sizeof(format), 1, out);
+        //fprintf(out, "|LIT_FORM|");
 
         SPU_VAL_TYPE val = 0;          
         sscanf(operand, "%i%n", &val, &isOk);
         assert(isOk != 0 && "ERROR: bad parsing of literal operand");
-        // fwrite(&val, sizeof(SPU_VAL_TYPE), 1, out);
-        fprintf(out, "|val = %d|\n", val);
+        fwrite(&val, sizeof(SPU_VAL_TYPE), 1, out);
+        // fprintf(out, "|val = %d|\n", val);
     } else if (strnConsistsChrs(operand, DELIMS_LIST, GASSEMBLY_MAX_LINE_SIZE, GASSEMBLY_MAX_LINE_SIZE) == 0) {
         /* Register case */
-        format.first_isMemCall  = 0;
-        format.first_isRegister = 1;
-        format.first_calculation = gCalc_none;
-        // fwrite(&format, sizeof(format), 1, out);            //TODO check if complete
-        fprintf(out, "|REG_FORM|");
+        format.isMemCall  = 0;
+        format.isRegister = 1;
+        format.calculation = gCalc_none;
+        fwrite(&format, sizeof(format), 1, out);            //TODO check if complete
+        // fprintf(out, "|REG_FORM|");
 
         char reg = 0;
         sscanf(operand, "%cx%n", &reg, &isOk);
@@ -119,8 +119,8 @@ int gassembly_putOperand(const char *operand, FILE *out)
         // }
         char regCode = reg - 'a' + 1;
         assert(regCode > 0);
-        // fputc(regCode, out);
-        fprintf(out, "|reg = %d|\n", regCode);
+        fputc(regCode, out);
+        // fprintf(out, "|reg = %d|\n", regCode);
     } else if (isMemCall(operand)) {
         /* Mem call case */
         char subOperand[GASSEMBLY_MAX_LINE_SIZE] = {};
@@ -130,13 +130,13 @@ int gassembly_putOperand(const char *operand, FILE *out)
         assert(closeBrackPos > openBrackPos);
         strncpy(subOperand, openBrackPos, closeBrackPos - openBrackPos);
 
-        format.first_isMemCall  = 1;
-        format.first_isRegister = 0;
-        format.first_calculation = gCalc_none;
-        // fwrite(&format, sizeof(format), 1, out);            //TODO check if complete
-        fprintf(out, "|MEM_FORM|\n");
+        format.isMemCall  = 1;
+        format.isRegister = 0;
+        format.calculation = gCalc_none;
+        fwrite(&format, sizeof(format), 1, out);            //TODO check if complete
+        // fprintf(out, "|MEM_FORM|\n");
         
-        printf("In mem-call case subOperand = #%s#\n", subOperand);
+        // printf("In mem-call case subOperand = #%s#\n", subOperand);
         gassembly_putOperand(subOperand, out);
     } 
     else {
@@ -146,21 +146,21 @@ int gassembly_putOperand(const char *operand, FILE *out)
 
         if (opPos == NULL) {
             /* Mult case */
-            format.first_isMemCall  = 0;
-            format.first_isRegister = 0;
-            format.first_calculation = gCalc_mul;
-            //fwrite(&format, sizeof(format), 1, out);
-            fprintf(out, "|MUL_FORM|\n");
+            format.isMemCall  = 0;
+            format.isRegister = 0;
+            format.calculation = gCalc_mul;
+            fwrite(&format, sizeof(format), 1, out);
+            //fprintf(out, "|MUL_FORM|\n");
 
             calcOp = '*';
             opPos = findFirstExternalOp(operand, '*');
         } else {
             /* Plus case */
-            format.first_isMemCall  = 0;
-            format.first_isRegister = 0;
-            format.first_calculation = gCalc_add;
-            //fwrite(&format, sizeof(format), 1, out);
-            fprintf(out, "|SUM_FORM|\n");
+            format.isMemCall  = 0;
+            format.isRegister = 0;
+            format.calculation = gCalc_add;
+            fwrite(&format, sizeof(format), 1, out);
+            //fprintf(out, "|SUM_FORM|\n");
 
             calcOp = '+';
         }
@@ -178,8 +178,8 @@ int gassembly_putOperand(const char *operand, FILE *out)
         ++opPos;
         strncpy(subOperand_2, opPos,  operandLen - (opPos - operand));
 
-        printf("subOperand_1 = #%s#\n", subOperand_1);
-        printf("subOperand_2 = #%s#\n", subOperand_2);
+        // fprintf(stderr, "subOperand_1 = #%s#\n", subOperand_1);
+        // fprintf(stderr, "subOperand_2 = #%s#\n", subOperand_2);
         int status_1 = gassembly_putOperand(subOperand_1, out);
         int status_2 = gassembly_putOperand(subOperand_2, out);
         if (status_1 != 0 || status_2 != 0)
@@ -251,7 +251,7 @@ int gassembly_parseOperand(const char *buffer, char *operand_1, char *operand_2)
             sumOpen = mulOpen = false;
         }
        
-        printf("curDelim = %c \t paramCnt = %d\n", *delim, paramCnt); //DEBUG
+        // printf("curDelim = %c \t paramCnt = %d\n", *delim, paramCnt); //DEBUG
         
         if (paramCnt != oldParamCnt) {
             if (firstOperand == NULL)
@@ -293,9 +293,21 @@ void gassembly_assembleFromFile(FILE *in, FILE *out)
 
     getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in);
     while (!feof(in)) {
+        // fprintf(stderr, "Got line = #%s#\n", buffer);
         gassembly_assembleFromLine(buffer, out);
         getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in);
     }
+}
+
+int gOpcodeByKeyword(char *keyword)
+{              
+    size_t i = 0;
+    while (i < gCnt && strcmp(keyword, gDisassambleTable[i])) {
+        ++i;
+    }
+    if (i == gCnt)
+        return -1;
+    return i;
 }
 
 void gassembly_assembleFromLine(const char *buffer, FILE *out) 
@@ -323,33 +335,144 @@ void gassembly_assembleFromLine(const char *buffer, FILE *out)
     char operand_1[GASSEMBLY_MAX_LINE_SIZE] = {};
     char operand_2[GASSEMBLY_MAX_LINE_SIZE] = {};
     sscanf(buffer, "%s", keyword);
-    // fputc(gdict_find(&opcodeDict, keyword), out);        //TODO implement dictionary for opcodes
-
+    fputc(gOpcodeByKeyword(keyword), out);        //TODO implement dictionary for opcodes
+    
     /* 
      * WARNING: by now buffer must not have opening spaces
      */
     char *operands = (char*)buffer;
-    while(!isspace(*operands) && *operands != '[')
+    while(*operands != '\0' && !isspace(*operands) && *operands != '[')
         ++operands;
 
+    // fprintf(stderr, "Before! operand_1 = #%s#\noperand_2 = #%s#\n", operand_1, operand_2);
+    // fprintf(stderr, "Operands = #%s#\n", operands);
     gassembly_parseOperand(operands, operand_1, operand_2);
-    gassembly_putOperand(operand_1, out);                   //TODO handle returned error codes
-    gassembly_putOperand(operand_2, out);
+    // fprintf(stderr, "operand_1 = #%s#\noperand_2 = #%s#\n", operand_1, operand_2);
+    if (*operand_1 != '\0')
+        gassembly_putOperand(operand_1, out);                   //TODO handle returned error codes
+    if (*operand_2 != '\0')
+        gassembly_putOperand(operand_2, out);
+    
+    /* writing empty format as the end of operands */
+    operandFormat emptyFormat = {};
+    fwrite(&emptyFormat, sizeof(emptyFormat), 1, out);
+}
+
+bool gassembly_formatIsEmpty(const operandFormat format)
+{
+    static operandFormat operandFormatZeroReference = {};
+    return !memcmp(&format, &operandFormatZeroReference, sizeof(operandFormat));
+}
+
+void gassembly_formatDump(const operandFormat format, FILE *out)
+{
+    fprintf(out, "%s\nFormat dump:\n", LOG_DELIM);
+    fprintf(out, "isRegister  = %d\n", format.isRegister);
+    fprintf(out, "isMemCall   = %d\n", format.isMemCall);
+    fprintf(out, "calculation = %d\n", format.calculation);
+    fprintf(out, "%s\n", LOG_DELIM);
+}
+
+bool gassembly_formatVerify(const operandFormat format)
+{
+   if (gassembly_formatIsEmpty(format))
+        return true;
+
+    if (format.isMemCall) 
+        return (format.calculation == gCalc_none);
+
+    if (format.isRegister) 
+        return (!format.isMemCall && (format.calculation == gCalc_none));
+
+    if (format.calculation != gCalc_none)
+        return (!format.isMemCall && (format.calculation != gCalc_empty));
+
+    return true;
+}
+
+/** 
+ * returns:
+ *          0 - OK, got operand
+ *          1 - OK, zero operand format, operand list end
+ *          2 - ERROR: error in memory call (no suboperand provided?)
+ *          3 - ERROR: error in calculation (no suboperand provided?)
+ *          4 - ERROR: error in register 
+ *          5 - ERROR: error in literal
+ *          6 - ERROR: bad format provided
+ *          7 - ERROR: file reading failed
+ */
+int gassembly_getOperand(FILE *in, FILE *out) 
+{
+    operandFormat format;
+    if (!fread(&format, sizeof(format), 1, in)) {
+        fprintf(stderr, "failed to read format!\n");
+        if (feof(in) || ferror(in))
+            return 7;
+        return 6;
+    }
+    // gassembly_formatDump(format, stderr);
+
+
+    if (!gassembly_formatVerify(format)) {
+        // gassembly_formatDump(format, logOut); //TODO optional log errors
+        return 6;
+    }
+
+    if (gassembly_formatIsEmpty(format)) {
+        return 1;
+    }
+    if (format.isMemCall) {
+        fprintf(out, "[");
+        if (gassembly_getOperand(in, out) != 0)
+            return 2;
+        fprintf(out, "]");
+    } else if (format.calculation != gCalc_none) {
+        if (gassembly_getOperand(in, out) != 0)
+            return 3;
+
+        fprintf(out, " %c ", DELIMS_LIST[format.calculation]);   
+        
+        if (gassembly_getOperand(in, out) != 0)
+            return 3;
+    } else if (format.isRegister) {
+        char regCode = 0;
+        regCode = fgetc(in);
+
+        if (regCode == EOF)
+            return 7;
+        
+        if (regCode < 1 || regCode > 100)
+            return 4;
+
+        fprintf(out, "%cx", regCode + 'a' - 1);
+    } else {
+        SPU_VAL_TYPE val = 0;
+        if (!fread(&val, sizeof(SPU_VAL_TYPE), 1, in)) {
+            if (feof(in) || ferror(in))
+                return 7;
+            return 5;
+        }
+
+        fprintf(out, "0x%X", val);
+    }
+    return 0;
 }
 
 void gassembly_disassembleFromFile(FILE *in, FILE *out) 
 {
     char opcode;
-    SPU_VAL_TYPE val;
     fread(&opcode, sizeof(char), 1, in);
     while (!feof(in)) {
         assert(opcode < gCnt);
-        if (opcode == gPush) {
-            fread(&val, sizeof(SPU_VAL_TYPE), 1, in);
-            fprintf(out, "%s %d\n", gDisassambleTable[gPush], val);
-        }
-        else 
-            fprintf(out, "%s\n", gDisassambleTable[opcode]);
+        fprintf(out, "%s ", gDisassambleTable[opcode]);
+        int status = 0;
+        while ((status = gassembly_getOperand(in, out)) == 0) 
+            fputc(' ', out);
+
+        if (status != 1)
+            fprintf(stderr, "Error occured while reading operand, error_code = %d\n", status);
+        
+        fprintf(out, "\n");
         fread(&opcode, sizeof(char), 1, in);
     }
 }
