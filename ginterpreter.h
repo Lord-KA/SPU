@@ -6,9 +6,9 @@
 
 #include <stdio.h>
 
-// typedef int GINTERPRETER_TYPE;
-
 #define FULL_DEBUG
+
+typedef SPU_VAL_TYPE STACK_TYPE;
 
 #include "gstack.h"
 
@@ -27,55 +27,47 @@ void ginterpreter_ctor(ginterpreter *interpreter);
 void ginterpreter_dtor(ginterpreter *interpreter);
 
 
-void ginterpreter_idle(ginterpreter *interpreter);
+/**
+ * `SPU_VAL_TYPE **valList` is a null-terminated list of opcode operands with length of `MAX_OPERANDS + 1`
+ */
+
+void ginterpreter_idle          (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+
+void ginterpreter_push_1        (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+
+void ginterpreter_pop           (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+void ginterpreter_pop_1         (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+
+void ginterpreter_add           (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+void ginterpreter_add_2         (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+
+void ginterpreter_sub           (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+void ginterpreter_sub_2         (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+
+void ginterpreter_mul           (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+void ginterpreter_mul_2         (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+
+void ginterpreter_mov_2         (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+
+void ginterpreter_out           (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+void ginterpreter_out_1         (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
 
 
-void ginterpreter_push_one(ginterpreter *interpreter, SPU_VAL_TYPE* value);
+int ginterpreter_runFromFile(ginterpreter *interpreter, FILE *in);
 
-
-void ginterpreter_pop(ginterpreter *interpreter);
-
-void ginterpreter_pop_one(ginterpreter *interpreter, SPU_VAL_TYPE *out);
-
-
-void ginterpreter_add(ginterpreter *interpreter);
-
-void ginterpreter_add_two(ginterpreter *interpreter, SPU_VAL_TYPE *one, SPU_VAL_TYPE *other);
-
-
-void ginterpreter_sub(ginterpreter *interpreter);
-
-void ginterpreter_sub_two(ginterpreter *interpreter, SPU_VAL_TYPE *one, SPU_VAL_TYPE *other);
-
-
-void ginterpreter_mul(ginterpreter *interpreter);
-
-void ginterpreter_mul_two(ginterpreter *interpreter, SPU_VAL_TYPE *one, SPU_VAL_TYPE *other);
-
-
-void ginterpreter_mov_two(ginterpreter *interpreter, SPU_VAL_TYPE *one, SPU_VAL_TYPE *other);
-
-
-void ginterpreter_out(ginterpreter *interpreter);
-
-void ginterpreter_out_one(ginterpreter *interpreter, SPU_VAL_TYPE *val);
-
-
-void ginterpreter_runFromFile(ginterpreter *interpreter, FILE *in);
-
-typedef void (*OpcodeFunctionPtr)(...);
+typedef void (*OpcodeFunctionPtr)(ginterpreter *, SPU_VAL_TYPE **);
 
 struct ginterpreter {
     stack Stack;
     const OpcodeFunctionPtr commandJumpTable[gCnt][MAX_OPERANDS + 1] = 
-            {{(OpcodeFunctionPtr)&ginterpreter_idle, NULL,                  NULL},
-             { NULL,             (OpcodeFunctionPtr)&ginterpreter_push_one, NULL},
-             {(OpcodeFunctionPtr)&ginterpreter_pop, (OpcodeFunctionPtr)&ginterpreter_pop_one,  NULL}, 
-             {(OpcodeFunctionPtr)&ginterpreter_mul,  NULL,                 (OpcodeFunctionPtr)&ginterpreter_mul_two},
-             { NULL,              NULL,                 (OpcodeFunctionPtr)&ginterpreter_mov_two},
-             {(OpcodeFunctionPtr)&ginterpreter_add,  NULL,                 (OpcodeFunctionPtr)&ginterpreter_add_two},
-             {(OpcodeFunctionPtr)&ginterpreter_sub,  NULL,                 (OpcodeFunctionPtr)&ginterpreter_sub_two},
-             {(OpcodeFunctionPtr)&ginterpreter_out, (OpcodeFunctionPtr)&ginterpreter_out_one,  NULL}};
+            {{(OpcodeFunctionPtr)&ginterpreter_idle, NULL,                                   NULL},
+             { NULL,                                (OpcodeFunctionPtr)&ginterpreter_push_1, NULL},
+             {(OpcodeFunctionPtr)&ginterpreter_pop, (OpcodeFunctionPtr)&ginterpreter_pop_1,  NULL}, 
+             {(OpcodeFunctionPtr)&ginterpreter_mul,  NULL,                                    (OpcodeFunctionPtr)&ginterpreter_mul_2},
+             { NULL,                                 NULL,                                    (OpcodeFunctionPtr)&ginterpreter_mov_2},
+             {(OpcodeFunctionPtr)&ginterpreter_add,  NULL,                                    (OpcodeFunctionPtr)&ginterpreter_add_2},
+             {(OpcodeFunctionPtr)&ginterpreter_sub,  NULL,                                    (OpcodeFunctionPtr)&ginterpreter_sub_2},
+             {(OpcodeFunctionPtr)&ginterpreter_out, (OpcodeFunctionPtr)&ginterpreter_out_1,  NULL}};
     
     SPU_VAL_TYPE Registers[MAX_REGISTERS + 1] = {};
 
