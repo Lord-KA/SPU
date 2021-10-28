@@ -358,38 +358,6 @@ void gassembly_assembleFromLine(const char *buffer, FILE *out)
     fwrite(&emptyFormat, sizeof(emptyFormat), 1, out);
 }
 
-bool gassembly_formatIsEmpty(const operandFormat format)
-{
-    static operandFormat operandFormatZeroReference = {};
-    return !memcmp(&format, &operandFormatZeroReference, sizeof(operandFormat));
-}
-
-void gassembly_formatDump(const operandFormat format, FILE *out)
-{
-    fprintf(out, "%s\nFormat dump:\n", LOG_DELIM);
-    fprintf(out, "isRegister  = %d\n", format.isRegister);
-    fprintf(out, "isMemCall   = %d\n", format.isMemCall);
-    fprintf(out, "calculation = %d\n", format.calculation);
-    fprintf(out, "%s\n", LOG_DELIM);
-}
-
-bool gassembly_formatVerify(const operandFormat format)
-{
-   if (gassembly_formatIsEmpty(format))
-        return true;
-
-    if (format.isMemCall) 
-        return (format.calculation == gCalc_none);
-
-    if (format.isRegister) 
-        return (!format.isMemCall && (format.calculation == gCalc_none));
-
-    if (format.calculation != gCalc_none)
-        return (!format.isMemCall && (format.calculation != gCalc_empty));
-
-    return true;
-}
-
 /** 
  * returns:
  *          0 - OK, got operand
@@ -413,12 +381,12 @@ int gassembly_getOperand(FILE *in, FILE *out)
     // gassembly_formatDump(format, stderr);
 
 
-    if (!gassembly_formatVerify(format)) {
+    if (!operandFormat_formatVerify(format)) {
         // gassembly_formatDump(format, logOut); //TODO optional log errors
         return 6;
     }
 
-    if (gassembly_formatIsEmpty(format)) {
+    if (operandFormat_isEmpty(format)) {
         return 1;
     }
     if (format.isMemCall) {
@@ -441,7 +409,7 @@ int gassembly_getOperand(FILE *in, FILE *out)
         if (regCode == EOF)
             return 7;
         
-        if (regCode < 1 || regCode > 100)
+        if (regCode < 1 || regCode >= MAX_REGISTERS)
             return 4;
 
         fprintf(out, "%cx", regCode + 'a' - 1);

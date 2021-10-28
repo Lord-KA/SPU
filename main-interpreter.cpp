@@ -6,4 +6,6 @@ int main() {
     ginterpreter_ctor(&inter);
     ginterpreter_runFromFile(&inter, stdin);
     stack_dump(&inter.Stack);
+
+    ginterpreter_dtor(&inter);
 }
