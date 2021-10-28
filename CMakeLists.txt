@@ -23,7 +23,7 @@ FetchContent_Declare(
 FetchContent_Declare(
   gstack
   GIT_REPOSITORY https://github.com/Lord-KA/HopefullyUnkillableStack.git
-  GIT_TAG        release-1.0.1
+  GIT_TAG        release-1.0.2
 )
 
 FetchContent_GetProperties(googletest gstack)
@@ -44,13 +44,18 @@ set_target_properties(gmock_main PROPERTIES FOLDER extern)
 
 enable_testing()
 
-add_executable(interpreter main-interpreter.cpp ginterpreter.h ginterpreter.cpp)
-add_executable(assembler main-assembler.cpp gassembly.h gassembly.cpp)
+include_directories(./include/)
+
+add_executable(interpreter src/main-interpreter.cpp src/ginterpreter.cpp)
+add_executable(assembler   src/main-assembler.cpp   src/gassembly.cpp)
+
+# add_executable(testing     tests/)       #TODO
+
 
 target_link_libraries(
-    interpreter
+    #testing
     gtest_main
 )
 
 include(GoogleTest)
-#gtest_discover_tests(test-gqsort)
+#gtest_discover_tests(testing)

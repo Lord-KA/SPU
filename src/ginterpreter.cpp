@@ -98,7 +98,7 @@ void ginterpreter_out    (ginterpreter *interpreter, SPU_VAL_TYPE **valList)
 
 void ginterpreter_out_1  (ginterpreter *interpreter, SPU_VAL_TYPE **valList)
 {
-    printf("%d", **valList);
+    printf("out = %d\n\n", **valList);
 }
 
 
@@ -190,9 +190,12 @@ int ginterpreter_runFromFile(ginterpreter *interpreter, FILE *in)
                 return 6666;                            //TODO add some error code for the case
             ++operandsCnt;
         }
+        if (status == 0)
+            assert(!"WTF?!");
         if (status != 1)
             return status;
         
+        fprintf(stdout, "!!!!!!!!!!operandsCnt = %d\n", operandsCnt);
         // if (operand_1)
         //     fprintf(stderr, "operand_1 = %d\n", *operand_1);
         // if (operand_2)

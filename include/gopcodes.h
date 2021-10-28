@@ -4,9 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 
-static const char LOG_DELIM[] = "========================";
+#include "gconfig.h"
 
-static const size_t MAX_REGISTERS = 16;
 
 enum gCommand : unsigned char {
     gIdle = 0,
@@ -26,6 +25,11 @@ enum argType {
 };
 
 static const char gDisassambleTable[gCnt][10] = {"idle", "push", "pop", "mul", "mov", "add", "sub", "out"}; 
+
+
+/** 
+ * Below is used for universal opcode operand formating 
+ */
 
 enum gCalc : unsigned {
     gCalc_empty = 0,
