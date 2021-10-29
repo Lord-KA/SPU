@@ -4,6 +4,7 @@
 #include <string.h>
 
 typedef int SPU_VAL_TYPE;
+#define ELEM_PRINTF_FORM "%d"
 
 static const char LOG_DELIM[] = "========================";
 

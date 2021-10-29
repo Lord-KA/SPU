@@ -60,18 +60,28 @@ bool strIsInteger(const char *haystack)
      * WARNING: haystack must be null-terminated string
      */
 
+    bool hexadecimalMode = false;
     char *iter = (char*)haystack;
     while (isspace(*iter))
         ++iter;
 
+
     /* for hexadecimal and octal support */
     if (iter - haystack < strlen(haystack) - 1
             && *iter == '0'
-            && (*(iter + 1) == 'o' || *(iter + 1) == 'x'))
-        iter += 2;    
+            && (*(iter + 1) == 'o' || *(iter + 1) == 'x')) {
+        if ((*iter + 1) == 'x')
+            hexadecimalMode = true;
+        iter += 2;
+    }
+    if (hexadecimalMode) {
+        while (isdigit(*iter) || ('a' <= *iter && *iter <= 'f'))
+            ++iter;
+    } else {
+        while (isdigit(*iter))
+            ++iter;
+    }
 
-    while (isdigit(*iter))
-        ++iter;
     while (isspace(*iter))
         ++iter;
     if (*iter == '\0')

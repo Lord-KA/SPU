@@ -14,13 +14,18 @@ char *findFirstExternalOp(const char *buffer, const char operation)
 {
     char *opPos = (char*)buffer;  
     size_t bufferLen = strlen(buffer);
-    size_t bracketBalance = 0;
+    size_t memBracketBalance  = 0;
+    size_t calcBracketBalance = 0;
     while (opPos < buffer + bufferLen
-            && (*opPos != operation || bracketBalance != 0)) {
+            && (*opPos != operation || calcBracketBalance != 0 || memBracketBalance != 0)) {
         if (*opPos == '[')
-            ++bracketBalance;
+            ++memBracketBalance;
         else if (*opPos == ']')
-            --bracketBalance;
+            --memBracketBalance;
+        else if (*opPos == '(')
+            ++calcBracketBalance;
+        else if (*opPos == ')')
+            --calcBracketBalance;
         ++opPos;
     }
     assert(opPos >= buffer);
@@ -74,6 +79,7 @@ int gassembly_putOperand(const char *operand, FILE *out)
      * WARNING: `operand` should be a null-terminated string
      */
 
+    /* cropping opening spaces */
     while (isspace(*operand))
         ++operand;
 
@@ -82,6 +88,15 @@ int gassembly_putOperand(const char *operand, FILE *out)
     // assert(!gPtrValid(out));
 
     size_t operandLen = strlen(operand);
+
+    /* cropping closing spaces */
+    char *iter = (char*)(operand + operandLen - 1);
+    while (isspace(*iter)) {
+        --iter;
+        --operandLen;
+    }
+    *(iter + 1) = '\0';
+
     int isOk = 0;
     operandFormat format = {};
     char calcOp = 0;
@@ -118,9 +133,9 @@ int gassembly_putOperand(const char *operand, FILE *out)
         //    return 3;
         // }
         char regCode = reg - 'a' + 1;
-        assert(regCode > 0);
+        //assert(regCode > 0);
         fputc(regCode, out);
-        // fprintf(out, "|reg = %d|\n", regCode);
+        fprintf(stderr, "|reg = %d|\n", regCode);
     } else if (isMemCall(operand)) {
         /* Mem call case */
         char subOperand[GASSEMBLY_MAX_LINE_SIZE] = {};
@@ -139,12 +154,20 @@ int gassembly_putOperand(const char *operand, FILE *out)
         // printf("In mem-call case subOperand = #%s#\n", subOperand);
         gassembly_putOperand(subOperand, out);
     } 
-    else {
-        /* Calculations case */
-        char *opPos = findFirstExternalOp(operand, '+');
+    else if (*operand == '(' && *(operand + operandLen - 1) == ')' ) {
+        /* Brackets calculation case */      
+        
+        char subOperand[GASSEMBLY_MAX_LINE_SIZE] = {};
+        strncpy(subOperand, operand + 1, operandLen - 2);
 
+        gassembly_putOperand(subOperand, out);
+    } else {
+        /* Resolving calculations case */
+        char *addPos = findFirstExternalOp(operand, '+');
+        char *subPos = findFirstExternalOp(operand, '-');
+        char *opPos  = NULL;
 
-        if (opPos == NULL) {
+        if (addPos == NULL && subPos == NULL) {
             /* Mult case */
             format.isMemCall  = 0;
             format.isRegister = 0;
@@ -154,19 +177,29 @@ int gassembly_putOperand(const char *operand, FILE *out)
 
             calcOp = '*';
             opPos = findFirstExternalOp(operand, '*');
-        } else {
+        } else if (addPos != NULL && (subPos == NULL || addPos < subPos)) {
             /* Plus case */
             format.isMemCall  = 0;
             format.isRegister = 0;
             format.calculation = gCalc_add;
             fwrite(&format, sizeof(format), 1, out);
             //fprintf(out, "|SUM_FORM|\n");
-
+            
+            opPos = addPos;
             calcOp = '+';
+        } else {
+            /* Minus case */
+            format.isMemCall  = 0;
+            format.isRegister = 0;
+            format.calculation = gCalc_sub;
+            fwrite(&format, sizeof(format), 1, out);
+            
+            opPos = subPos;
+            calcOp = '-';
         }
 
         if (opPos == NULL) {
-            fprintf(stderr, "ERROR: parsing error, no `+` or `*` in a calculation\n");
+            fprintf(stderr, "ERROR: parsing error, no `+` or `-` or `*` in a calculation\n");
             return 4;
         }
         assert(opPos > operand);
@@ -198,7 +231,6 @@ int gassembly_putOperand(const char *operand, FILE *out)
  */
 int gassembly_parseOperand(const char *buffer, char *operand_1, char *operand_2) {
     const size_t bufferLen = strlen(buffer);
-    char *delim = (char*)buffer;
     char *firstOperand  = 0;
     char *secondOperand = 0;
     size_t bracketBalance = 0;
@@ -207,6 +239,12 @@ int gassembly_parseOperand(const char *buffer, char *operand_1, char *operand_2)
     bool   sumOpen    = false;
     bool   mulOpen    = false;
 
+    char *delim = findFirstExternalOp(buffer, ',');
+    if (delim == NULL) {
+        
+    }
+
+    /*
     while (delim - buffer < bufferLen && paramCnt < 2) {
         assert(delim - buffer >= 0);
         bool wordWasOpened = wordOpen;
@@ -261,6 +299,7 @@ int gassembly_parseOperand(const char *buffer, char *operand_1, char *operand_2)
         }
         ++delim;
     }
+    */
     if (firstOperand  != NULL && secondOperand != NULL) {
         strncpy(operand_1, firstOperand, secondOperand - firstOperand);
         strncpy(operand_2, secondOperand, bufferLen - (secondOperand - buffer));
@@ -346,13 +385,27 @@ void gassembly_assembleFromLine(const char *buffer, FILE *out)
 
     // fprintf(stderr, "Before! operand_1 = #%s#\noperand_2 = #%s#\n", operand_1, operand_2);
     // fprintf(stderr, "Operands = #%s#\n", operands);
+    char *delim = findFirstExternalOp(operands, ',');
+
+    while (delim != NULL) {
+        char operand[GASSEMBLY_MAX_LINE_SIZE] = {};
+        assert(delim > operands);
+        strncpy(operand, operands, delim - operands);
+        gassembly_putOperand(operand, out);             //TODO handle returned error codes
+        operands = delim + 1;
+        delim = findFirstExternalOp(operands, ',');
+    }
+    gassembly_putOperand(operands, out);
+    
+
+    /*
     gassembly_parseOperand(operands, operand_1, operand_2);
     // fprintf(stderr, "operand_1 = #%s#\noperand_2 = #%s#\n", operand_1, operand_2);
     if (*operand_1 != '\0')
         gassembly_putOperand(operand_1, out);                   //TODO handle returned error codes
     if (*operand_2 != '\0')
         gassembly_putOperand(operand_2, out);
-    
+    */
     /* writing empty format as the end of operands */
     operandFormat emptyFormat = {};
     fwrite(&emptyFormat, sizeof(emptyFormat), 1, out);
@@ -395,6 +448,7 @@ int gassembly_getOperand(FILE *in, FILE *out)
             return 2;
         fprintf(out, "]");
     } else if (format.calculation != gCalc_none) {
+        fprintf(out, "(");
         if (gassembly_getOperand(in, out) != 0)
             return 3;
 
@@ -402,6 +456,7 @@ int gassembly_getOperand(FILE *in, FILE *out)
         
         if (gassembly_getOperand(in, out) != 0)
             return 3;
+        fprintf(out, ")");
     } else if (format.isRegister) {
         char regCode = 0;
         regCode = fgetc(in);

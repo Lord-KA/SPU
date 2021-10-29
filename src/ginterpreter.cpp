@@ -98,7 +98,7 @@ void ginterpreter_out    (ginterpreter *interpreter, SPU_VAL_TYPE **valList)
 
 void ginterpreter_out_1  (ginterpreter *interpreter, SPU_VAL_TYPE **valList)
 {
-    printf("out = %d\n\n", **valList);
+    printf("%d\n", **valList);
 }
 
 
@@ -153,15 +153,22 @@ int ginterpreter_calcOperand(ginterpreter *interpreter, FILE *in, SPU_VAL_TYPE *
     } else if (format.calculation != gCalc_none) {
         fprintf(stderr, "Calculation!\n");
         status = ginterpreter_calcOperand(interpreter, in, valuePtr);
-        ret_val = **valuePtr;
+        SPU_VAL_TYPE result = **valuePtr;
         status = ginterpreter_calcOperand(interpreter, in, valuePtr);
 
+
         if (format.calculation == gCalc_mul) 
-            ret_val *= **valuePtr;
+            result *= **valuePtr;
         else if (format.calculation == gCalc_add)
-            ret_val += **valuePtr;
+            result += **valuePtr;
         else if (format.calculation == gCalc_sub)
-            ret_val -= **valuePtr;
+            result -= **valuePtr;
+        else {
+            fprintf(stderr, "FATAL_ERROR: bad calculation option provided in bytecode\n");
+            return 3;
+        }
+
+        ret_val = result;
         *valuePtr = &ret_val;
     } else {
         fprintf(stderr, "Literal!\n");
@@ -195,7 +202,6 @@ int ginterpreter_runFromFile(ginterpreter *interpreter, FILE *in)
         if (status != 1)
             return status;
         
-        fprintf(stdout, "!!!!!!!!!!operandsCnt = %d\n", operandsCnt);
         // if (operand_1)
         //     fprintf(stderr, "operand_1 = %d\n", *operand_1);
         // if (operand_2)

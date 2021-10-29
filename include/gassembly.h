@@ -9,7 +9,7 @@
 static const size_t GASSEMBLY_MAX_LINE_SIZE = 64;
 
 static const char DIGITS_LIST[] = "0123456789";
-static const char DELIMS_LIST[] = "[]+-*";
+static const char DELIMS_LIST[] = "[]+-*()";
 
 struct gassembly {
 
