@@ -3,8 +3,9 @@
 
 #include <string.h>
 
-typedef int SPU_VAL_TYPE;
-#define ELEM_PRINTF_FORM "%d"
+typedef long long SPU_FLOAT_TYPE;
+typedef long long SPU_INTEG_TYPE;
+#define ELEM_PRINTF_FORM "%lli"
 
 static const char LOG_DELIM[] = "========================";
 

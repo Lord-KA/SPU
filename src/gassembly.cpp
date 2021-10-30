@@ -7,7 +7,6 @@
 #include <string.h>
 #include <ctype.h>
 
-//TODO switch to `sscanf_s`
 //TODO check `fwrite` and `fputc` outp
 
 char *findFirstExternalOp(const char *buffer, const char operation)
@@ -35,7 +34,7 @@ char *findFirstExternalOp(const char *buffer, const char operation)
         return NULL;
 }
 
-bool isMemCall(const char *buffer) 
+static bool isMemCall(const char *buffer) 
 {
     /*
      * WARNING buffer must be a null-terminated string
@@ -64,6 +63,39 @@ bool isMemCall(const char *buffer)
         return true;
 }
 
+static bool isRegister(const char *buffer) 
+{
+    char *iter = (char*)buffer;
+    while (isspace(*iter)) 
+        ++iter;
+    if (iter - buffer < strlen(buffer) + 1
+            && (*iter >= 'a' && *iter - 'a' < MAX_REGISTERS)
+            && (*(iter + 1) == 'x'))
+            return true;
+    return false;
+}
+
+static bool isLable(const char *buffer) 
+{
+    if (isRegister(buffer))
+        return false;
+
+    char *iter = (char*)buffer;
+    while (isspace(*iter)) 
+        ++iter;
+    
+    if (!isalpha(*iter) || *iter == '\0')           //TODO maybe add local lable support (like `.loop`)
+        return false;
+    ++iter;
+
+    while (*iter != '\0') {
+        if (!isalpha(*iter) && !isdigit(*iter) && *iter != '_')
+            return false;
+        ++iter;
+    }
+    return true;
+}
+
 /**
  *
  * returns status:
@@ -72,6 +104,7 @@ bool isMemCall(const char *buffer)
  *              2 = Parsing error in Literal      case
  *              3 = Parsing error in Register     case
  *              4 = Parsing error in Calculations case
+ *              4 = Parsing error in Lable        case
  */
 int gassembly_putOperand(const char *operand, FILE *out) 
 {
@@ -105,20 +138,34 @@ int gassembly_putOperand(const char *operand, FILE *out)
     if (operandLen == 0)
         return 1;
 
-    if (strIsInteger(operand)) {
-        /* Literal case */                     
+    if (isInteger(operand)) {
+        /* Literal integer case */                     
         format.isMemCall  = 0;
         format.isRegister = 0;
         format.calculation = gCalc_none;
         fwrite(&format, sizeof(format), 1, out);
         //fprintf(out, "|LIT_FORM|");
 
-        SPU_VAL_TYPE val = 0;          
-        sscanf(operand, "%i%n", &val, &isOk);
+        SPU_INTEG_TYPE val = 0;          
+        sscanf(operand, "%lli%n", &val, &isOk);
+        assert(sizeof(SPU_INTEG_TYPE) == sizeof(SPU_FLOAT_TYPE) && "SPU_INTEG_TYPE type must be corrected to be compatible with SPU_FLOAT_TYPE");
         assert(isOk != 0 && "ERROR: bad parsing of literal operand");
-        fwrite(&val, sizeof(SPU_VAL_TYPE), 1, out);
+        fwrite(&val, sizeof(SPU_INTEG_TYPE), 1, out);
         // fprintf(out, "|val = %d|\n", val);
-    } else if (strnConsistsChrs(operand, DELIMS_LIST, GASSEMBLY_MAX_LINE_SIZE, GASSEMBLY_MAX_LINE_SIZE) == 0) {
+    } else if (isDouble(operand)) {
+        /* Literal double case */
+        format.isMemCall  = 0;
+        format.isRegister = 0;
+        format.calculation = gCalc_none;
+        fwrite(&format, sizeof(format), 1, out);
+        //fprintf(out, "|LIT_FORM|");
+
+        SPU_FLOAT_TYPE val = 0;          
+        sscanf(operand, "%lg%n", &val, &isOk);
+        assert(isOk != 0 && "ERROR: bad parsing of literal operand");
+        fwrite(&val, sizeof(SPU_FLOAT_TYPE), 1, out);
+        // fprintf(out, "|val = %d|\n", val);
+    } else if (isRegister(operand)) {
         /* Register case */
         format.isMemCall  = 0;
         format.isRegister = 1;
@@ -136,6 +183,22 @@ int gassembly_putOperand(const char *operand, FILE *out)
         //assert(regCode > 0);
         fputc(regCode, out);
         fprintf(stderr, "|reg = %d|\n", regCode);
+    } else if (isLable(operand)) {
+        /* Lable case */
+        format.isMemCall  = 0;
+        format.isRegister = 0;
+        format.calculation = gCalc_none;
+        fwrite(&format, sizeof(format), 1, out);
+
+        char lable[GASSEMBLY_MAX_LINE_SIZE] = {};
+        sscanf(operand, "%s", lable);
+        size_t i = 0;
+        while (i < GASSEMBLY_MAX_LABLES && strcmp(gassembly_Lables[i], lable) != 0)
+            ++i;
+        if (i == GASSEMBLY_MAX_LABLES)
+            --i;
+        fwrite(&gassembly_Fixups[i], sizeof(SPU_INTEG_TYPE), 1, out);
+
     } else if (isMemCall(operand)) {
         /* Mem call case */
         char subOperand[GASSEMBLY_MAX_LINE_SIZE] = {};
@@ -221,93 +284,6 @@ int gassembly_putOperand(const char *operand, FILE *out)
     return 0;
 }
 
-/** 
- * returns status:
- *              0 = OK
- *              1 = parsing error: extra `+`
- *              2 = parsing error: extra `*`
- *              3 = parsing error: bad brackets
- *              4 = parsing error: `+` and `*` in succession
- */
-int gassembly_parseOperand(const char *buffer, char *operand_1, char *operand_2) {
-    const size_t bufferLen = strlen(buffer);
-    char *firstOperand  = 0;
-    char *secondOperand = 0;
-    size_t bracketBalance = 0;
-    size_t paramCnt   = 0;
-    bool   wordOpen   = false;
-    bool   sumOpen    = false;
-    bool   mulOpen    = false;
-
-    char *delim = findFirstExternalOp(buffer, ',');
-    if (delim == NULL) {
-        
-    }
-
-    /*
-    while (delim - buffer < bufferLen && paramCnt < 2) {
-        assert(delim - buffer >= 0);
-        bool wordWasOpened = wordOpen;
-        size_t oldParamCnt = paramCnt;
-        
-        if (isspace(*delim) || strchr(DELIMS_LIST, *delim) != NULL) {
-            wordOpen = false;
-        } else if (!wordOpen)
-            wordOpen = true;
-
-        if (*delim == '[')
-            ++bracketBalance;
-        else if (*delim == ']')
-            --bracketBalance;
-        else if (*delim == '+') {
-            if (sumOpen)
-                return 1;
-            sumOpen = true;
-        } else if (*delim == '*') {
-            if (mulOpen)
-                return 2;
-            mulOpen = true;
-        }
-
-        if (!wordWasOpened && !wordOpen
-                && !mulOpen
-                && !sumOpen
-                && *delim == '[') {
-            ++paramCnt;
-            wordOpen = true;
-        }
-
-        if (wordOpen && !wordWasOpened 
-                && bracketBalance == 0 
-                && !mulOpen
-                && !sumOpen)
-            ++paramCnt;
- 
-        if (wordOpen && !wordWasOpened) {
-            if (mulOpen && sumOpen)
-                return 4;
-            sumOpen = mulOpen = false;
-        }
-       
-        // printf("curDelim = %c \t paramCnt = %d\n", *delim, paramCnt); //DEBUG
-        
-        if (paramCnt != oldParamCnt) {
-            if (firstOperand == NULL)
-                firstOperand = delim;
-            else
-                secondOperand = delim;
-        }
-        ++delim;
-    }
-    */
-    if (firstOperand  != NULL && secondOperand != NULL) {
-        strncpy(operand_1, firstOperand, secondOperand - firstOperand);
-        strncpy(operand_2, secondOperand, bufferLen - (secondOperand - buffer));
-    }
-    else if (firstOperand != NULL) 
-        strncpy(operand_1, firstOperand, bufferLen - (firstOperand - buffer));
-    return 0;
-}
 
 void getline(char *buffer, size_t bufferLen, FILE *in) 
 {
@@ -326,15 +302,33 @@ finish:
     buffer[curLen++] = '\0';
 }
 
+
 void gassembly_assembleFromFile(FILE *in, FILE *out) 
 {
     char buffer[GASSEMBLY_MAX_LINE_SIZE] = {};
+    
+    long startPos = ftell(in);
+    FILE *devNull = fopen("tmp.tmp", "wb");
+    bool fixupRun = true;
 
     getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in);
     while (!feof(in)) {
-        // fprintf(stderr, "Got line = #%s#\n", buffer);
-        gassembly_assembleFromLine(buffer, out);
+        gassembly_assembleFromLine(buffer, devNull, fixupRun);
         getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in);
+    }
+
+    fixupRun = false;
+    fseek(in, startPos, SEEK_SET);
+    getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in);
+    while (!feof(in)) {
+        gassembly_assembleFromLine(buffer, out, fixupRun);
+        getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in);
+    }
+
+    size_t i = 0;       //DEBUG
+    while (*gassembly_Lables[i] != '\0') {
+        fprintf(stderr, "Lable = #%s#, Fixup = %d\n", gassembly_Lables[i], (SPU_INTEG_TYPE)gassembly_Fixups[i]);
+        ++i;
     }
 }
 
@@ -349,7 +343,36 @@ int gOpcodeByKeyword(char *keyword)
     return i;
 }
 
-void gassembly_assembleFromLine(const char *buffer, FILE *out) 
+bool gassembly_getLable(const char *buffer, char **beg, char **end)
+{
+    char *iter = (char*)buffer;
+    while (isspace(*iter))
+        ++iter;
+    *beg = iter;
+    if (!isalpha(*iter))
+        return false;
+    
+    while (isalpha(*iter) || isdigit(*iter) || *iter == '_')
+        ++iter;
+    *end = iter;
+    
+    while (isspace(*iter))
+        ++iter;
+    
+    if (*iter != ':')
+        return false;
+
+    ++iter;
+    while (isspace(*iter))
+        ++iter;
+    if (*iter != '\0')
+        return false;
+
+    return true;
+}
+
+
+void gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun) 
 {
     /* 
      * WARNING: `buffer` must be a null terminated
@@ -357,7 +380,7 @@ void gassembly_assembleFromLine(const char *buffer, FILE *out)
      */
     // assert(!gPtrValid(buffer));
     // assert(!gPtrValid(out));
-
+    
     /* cropping comments that start with `;` */
     char *commentPos = (char*)strchr(buffer, ';');
     if (commentPos != NULL)
@@ -370,6 +393,26 @@ void gassembly_assembleFromLine(const char *buffer, FILE *out)
     if (*buffer == '\0')
         return;
 
+
+    char *lableBeg = NULL;  
+    char *lableEnd = NULL;
+    if (gassembly_getLable(buffer, &lableBeg, &lableEnd)) {
+        if (fixupRun) {
+            size_t i = 0;
+            while (i < GASSEMBLY_MAX_LABLES && *gassembly_Lables[i] != '\0')
+                ++i;
+            if (i == GASSEMBLY_MAX_LABLES) {
+                fprintf(stderr, "ERROR: Fixup table is full!\n");
+                return;
+            }
+            strncpy(gassembly_Lables[i], lableBeg, lableEnd - lableBeg);
+            assert(gassembly_Fixups[i] == 0);
+            gassembly_Fixups[i] = ftell(out);
+        }
+            return;
+    }
+
+
     char   keyword[GASSEMBLY_MAX_LINE_SIZE] = {};
     char operand_1[GASSEMBLY_MAX_LINE_SIZE] = {};
     char operand_2[GASSEMBLY_MAX_LINE_SIZE] = {};
@@ -377,7 +420,7 @@ void gassembly_assembleFromLine(const char *buffer, FILE *out)
     fputc(gOpcodeByKeyword(keyword), out);        //TODO implement dictionary for opcodes
     
     /* 
-     * WARNING: by now buffer must not have opening spaces
+     * By now buffer shell not have opening spaces
      */
     char *operands = (char*)buffer;
     while(*operands != '\0' && !isspace(*operands) && *operands != '[')
@@ -398,17 +441,9 @@ void gassembly_assembleFromLine(const char *buffer, FILE *out)
     gassembly_putOperand(operands, out);
     
 
-    /*
-    gassembly_parseOperand(operands, operand_1, operand_2);
-    // fprintf(stderr, "operand_1 = #%s#\noperand_2 = #%s#\n", operand_1, operand_2);
-    if (*operand_1 != '\0')
-        gassembly_putOperand(operand_1, out);                   //TODO handle returned error codes
-    if (*operand_2 != '\0')
-        gassembly_putOperand(operand_2, out);
-    */
-    /* writing empty format as the end of operands */
     operandFormat emptyFormat = {};
     fwrite(&emptyFormat, sizeof(emptyFormat), 1, out);
+
 }
 
 /** 
@@ -469,14 +504,14 @@ int gassembly_getOperand(FILE *in, FILE *out)
 
         fprintf(out, "%cx", regCode + 'a' - 1);
     } else {
-        SPU_VAL_TYPE val = 0;
-        if (!fread(&val, sizeof(SPU_VAL_TYPE), 1, in)) {
+        SPU_FLOAT_TYPE val = 0;
+        if (!fread(&val, sizeof(SPU_FLOAT_TYPE), 1, in)) {
             if (feof(in) || ferror(in))
                 return 7;
             return 5;
         }
 
-        fprintf(out, "0x%X", val);
+        fprintf(out, "%lf", val);
     }
     return 0;
 }

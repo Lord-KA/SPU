@@ -54,10 +54,10 @@ bool strnConsistsChrs(const char *haystack, const char* needles, size_t haystack
     return 0;
 }
 
-bool strIsInteger(const char *haystack) 
+bool isInteger(const char *haystack) 
 {
     /* 
-     * WARNING: haystack must be null-terminated string
+     * WARNING: haystack must be a null-terminated string
      */
 
     bool hexadecimalMode = false;
@@ -90,4 +90,46 @@ bool strIsInteger(const char *haystack)
         return false;
 }
 
+bool isDouble(const char *haystack) {
+    /* 
+     * WARNING: haystack must be a null-terminated string
+     */
+
+    char *iter = (char*)haystack;
+    while (isspace(*iter))
+        ++iter;
+
+    do {
+        if (!isdigit(*iter))
+            return false;
+        ++iter;
+    } while (*iter != '\0' && *iter != '.');
+
+    do {
+        ++iter;
+    } while (isdigit(*iter));
+    if (*iter == '\0')
+        return true;
+
+    if (*iter != 'e')
+        return false;
+
+    if (iter - haystack >= strlen(haystack) - 2)
+        return false;
+    ++iter;
+    if (*iter != '+' && *iter != '-')
+        return false;
+    ++iter;
+    while (*iter != '\0' && !isspace(*iter)) {
+        if (!isdigit(*iter))
+            return false;
+        ++iter;
+    }
+    while (isspace(*iter))
+        ++iter;
+    if (*iter == '\0')
+        return true;
+    else 
+        return false;
+}
 #endif

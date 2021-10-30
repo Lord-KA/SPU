@@ -8,7 +8,7 @@
 
 #define FULL_DEBUG
 
-typedef SPU_VAL_TYPE STACK_TYPE;
+typedef SPU_FLOAT_TYPE STACK_TYPE;
 
 #include "gstack.h"
 
@@ -28,34 +28,36 @@ void ginterpreter_dtor(ginterpreter *interpreter);
 
 
 /**
- * `SPU_VAL_TYPE **valList` is a null-terminated list of opcode operands with length of `MAX_OPERANDS + 1`
+ * `SPU_FLOAT_TYPE **valList` is a null-terminated list of opcode operands with length of `MAX_OPERANDS + 1`
  */
 
-void ginterpreter_idle          (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+void ginterpreter_idle          (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList);
 
-void ginterpreter_push_1        (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+void ginterpreter_push_1        (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList);
 
-void ginterpreter_pop           (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
-void ginterpreter_pop_1         (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+void ginterpreter_pop           (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList);
+void ginterpreter_pop_1         (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList);
 
-void ginterpreter_add           (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
-void ginterpreter_add_2         (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+void ginterpreter_add           (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList);
+void ginterpreter_add_2         (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList);
 
-void ginterpreter_sub           (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
-void ginterpreter_sub_2         (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+void ginterpreter_sub           (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList);
+void ginterpreter_sub_2         (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList);
 
-void ginterpreter_mul           (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
-void ginterpreter_mul_2         (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+void ginterpreter_mul           (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList);
+void ginterpreter_mul_2         (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList);
 
-void ginterpreter_mov_2         (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+void ginterpreter_mov_2         (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList);
 
-void ginterpreter_out           (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
-void ginterpreter_out_1         (ginterpreter *interpreter, SPU_VAL_TYPE **valList);
+void ginterpreter_out           (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList);
+void ginterpreter_out_1         (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList);
+
+void ginterpreter_jmp_1         (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList);
 
 
 int ginterpreter_runFromFile(ginterpreter *interpreter, FILE *in);
 
-typedef void (*OpcodeFunctionPtr)(ginterpreter *, SPU_VAL_TYPE **);
+typedef void (*OpcodeFunctionPtr)(ginterpreter *, SPU_FLOAT_TYPE **);
 
 struct ginterpreter {
     stack Stack;
@@ -68,11 +70,12 @@ struct ginterpreter {
              {(OpcodeFunctionPtr)&ginterpreter_add,  NULL,                                  (OpcodeFunctionPtr)&ginterpreter_add_2},
              {(OpcodeFunctionPtr)&ginterpreter_sub,  NULL,                                  (OpcodeFunctionPtr)&ginterpreter_sub_2},
              {(OpcodeFunctionPtr)&ginterpreter_out, (OpcodeFunctionPtr)&ginterpreter_out_1,  NULL},
+             { NULL,                                (OpcodeFunctionPtr)&ginterpreter_jmp_1,  NULL},
         };
     
-    SPU_VAL_TYPE Registers[MAX_REGISTERS + 1] = {};
+    SPU_FLOAT_TYPE Registers[MAX_REGISTERS + 1] = {};
 
-    SPU_VAL_TYPE *RAM;
+    SPU_FLOAT_TYPE *RAM;
 } typedef ginterpreter;
 
 

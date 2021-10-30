@@ -16,6 +16,7 @@ enum gCommand : unsigned char {
     gAdd,
     gSub,
     gOut,
+    gJmp,
     gCnt
 };
 
@@ -24,7 +25,7 @@ enum argType {
     num
 };
 
-static const char gDisassambleTable[gCnt][10] = {"idle", "push", "pop", "mul", "mov", "add", "sub", "out"}; 
+static const char gDisassambleTable[gCnt][10] = {"idle", "push", "pop", "mul", "mov", "add", "sub", "out", "jmp"}; 
 
 
 /** 
