@@ -11,4 +11,9 @@ static const char LOG_DELIM[] = "========================";
 
 static const size_t MAX_REGISTERS = 16;
 
+static const size_t GASSEMBLY_MAX_LINE_SIZE = 256;
+  
+static const size_t GASSEMBLY_MAX_LABLES = 1000;        //TODO make it dynamicly reallocating?
+
+
 #endif

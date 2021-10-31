@@ -1,17 +1,20 @@
 #include "ginterpreter.h"
 
-void ginterpreter_ctor(ginterpreter *interpreter)
+void ginterpreter_ctor(ginterpreter *context)
 {
-    stack_ctor(&interpreter->Stack);
+    stack_ctor(&context->Stack);
 
-    interpreter->RAM = (SPU_FLOAT_TYPE*)calloc(MAX_RAM_SIZE, sizeof(SPU_FLOAT_TYPE));
+    context->RAM = (SPU_FLOAT_TYPE*)calloc(MAX_RAM_SIZE, sizeof(SPU_FLOAT_TYPE));
+    if (context->RAM == NULL) {
+        fprintf(stderr, "ERROR: Failed to allocate RAM memory!\n");
+    }
 }
 
-void ginterpreter_dtor(ginterpreter *interpreter)
+void ginterpreter_dtor(ginterpreter *context)
 {
-    stack_dtor(&interpreter->Stack);
+    stack_dtor(&context->Stack);
 
-    free(interpreter->RAM);
+    free(context->RAM);
 }
 
 
@@ -19,99 +22,96 @@ void ginterpreter_dtor(ginterpreter *interpreter)
  * `SPU_FLOAT_TYPE **valList` is a null-terminated list of opcode operands with length of `MAX_OPERANDS + 1`
  */
 
-void ginterpreter_idle(ginterpreter *interpreter, SPU_FLOAT_TYPE **valList)
+void ginterpreter_idle(ginterpreter *context, SPU_FLOAT_TYPE **valList)
 {
     return;
 }
 
-void ginterpreter_push_1  (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList)
+void ginterpreter_push_1  (ginterpreter *context, SPU_FLOAT_TYPE **valList)
 {
-    stack_push(&interpreter->Stack, **valList);
+    stack_push(&context->Stack, **valList);
 }
 
-void ginterpreter_pop     (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList)
+void ginterpreter_pop     (ginterpreter *context, SPU_FLOAT_TYPE **valList)
 {
-    stack_pop(&interpreter->Stack, NULL);
+    stack_pop(&context->Stack, NULL);
 }
 
-void ginterpreter_pop_1   (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList)
+void ginterpreter_pop_1   (ginterpreter *context, SPU_FLOAT_TYPE **valList)
 {
-    stack_pop(&interpreter->Stack, *valList);
+    stack_pop(&context->Stack, *valList);
 }
 
-void ginterpreter_add     (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList)
+void ginterpreter_add     (ginterpreter *context, SPU_FLOAT_TYPE **valList)
 {
     SPU_FLOAT_TYPE val_1, val_2;
 
-    stack_pop(&interpreter->Stack, &val_1);
-    stack_pop(&interpreter->Stack, &val_2);
+    stack_pop(&context->Stack, &val_1);
+    stack_pop(&context->Stack, &val_2);
 
-    stack_push(&interpreter->Stack, val_1 + val_2);
+    stack_push(&context->Stack, val_1 + val_2);
 }
 
-void ginterpreter_add_2   (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList)
+void ginterpreter_add_2   (ginterpreter *context, SPU_FLOAT_TYPE **valList)
 {
     **valList += **(valList + 1);
 }
 
-void ginterpreter_sub     (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList)
+void ginterpreter_sub     (ginterpreter *context, SPU_FLOAT_TYPE **valList)
 {
     SPU_FLOAT_TYPE val_1, val_2;
 
-    stack_pop(&interpreter->Stack, &val_1);
-    stack_pop(&interpreter->Stack, &val_2);
+    stack_pop(&context->Stack, &val_1);
+    stack_pop(&context->Stack, &val_2);
  
-    stack_push(&interpreter->Stack, val_1 - val_2);
+    stack_push(&context->Stack, val_1 - val_2);
 }
 
-void ginterpreter_sub_2  (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList)
+void ginterpreter_sub_2  (ginterpreter *context, SPU_FLOAT_TYPE **valList)
 {
     **valList -= **(valList + 1);
 }
 
-void ginterpreter_mul    (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList)
+void ginterpreter_mul    (ginterpreter *context, SPU_FLOAT_TYPE **valList)
 {
     SPU_FLOAT_TYPE val_1, val_2;
 
-    stack_pop(&interpreter->Stack, &val_1);
-    stack_pop(&interpreter->Stack, &val_2);
+    stack_pop(&context->Stack, &val_1);
+    stack_pop(&context->Stack, &val_2);
 
-    stack_push(&interpreter->Stack, val_1 * val_2);
+    stack_push(&context->Stack, val_1 * val_2);
 }
 
-void ginterpreter_mul_2  (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList)
+void ginterpreter_mul_2  (ginterpreter *context, SPU_FLOAT_TYPE **valList)
 {
     **valList *= **(valList + 1);
 }
 
-void ginterpreter_mov_2  (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList)
+void ginterpreter_mov_2  (ginterpreter *context, SPU_FLOAT_TYPE **valList)
 {
     **valList = **(valList + 1);
 }
 
-void ginterpreter_out    (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList)
+void ginterpreter_out    (ginterpreter *context, SPU_FLOAT_TYPE **valList)
 {
     SPU_FLOAT_TYPE val;
-    stack_pop(&interpreter->Stack, &val);
+    stack_pop(&context->Stack, &val);
     printf("%d\n", val);
 }
 
-void ginterpreter_out_1  (ginterpreter *interpreter, SPU_FLOAT_TYPE **valList)
+void ginterpreter_out_1  (ginterpreter *context, SPU_FLOAT_TYPE **valList)
 {
     printf("%d\n", **valList);
 }
 
-FILE *in_TMP = NULL;            //TODO DELETE IT!!!!
-
-void ginterpreter_jmp_1  (ginterpreter *interpreter, SPU_FLOAT_TYPE**valList)
+void ginterpreter_jmp_1  (ginterpreter *context, SPU_FLOAT_TYPE**valList)
 {
     SPU_INTEG_TYPE pos = **valList;
     fprintf(stderr, "pos = %lli\n", pos);
-    fseek(in_TMP, pos, SEEK_SET);
+    fseek(context->inStream, pos, SEEK_SET);
 }
 
-static SPU_FLOAT_TYPE ret_val = {};
- 
+
 /** 
  * returns:
  *          0 - OK, got operand
@@ -123,47 +123,52 @@ static SPU_FLOAT_TYPE ret_val = {};
  *          6 - ERROR: bad format provided
  *          7 - ERROR: file reading failed
  */
-int ginterpreter_calcOperand(ginterpreter *interpreter, FILE *in, SPU_FLOAT_TYPE **valuePtr)
+ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TYPE **valuePtr)  //TODO add logs when error occures
 {
     operandFormat format = {};
-    int status = 0;
 
-    if (!fread(&format, sizeof(format), 1, in)){
+    ginterpreter_status status = ginterpreter_status_OK;
+
+    if (fread(&format, sizeof(format), 1, context->inStream) != 1){
         fprintf(stderr, "Failed to read format!\n");
-        if (feof(in) || ferror(in))
-            return 7;
-        return 6;
+        if (feof(context->inStream) || ferror(context->inStream))
+            return ginterpreter_status_FileErr;
+        return ginterpreter_status_BadFormat;
     }
 
     if(!operandFormat_formatVerify(format))
-        return 6;
+        return ginterpreter_status_BadFormat;
 
     if (operandFormat_isEmpty(format)) {
         *valuePtr = NULL;
-        return 1;
+        return ginterpreter_status_EmptyFormat;
     }
 
     if (format.isMemCall) {
         fprintf(stderr, "Mem Call!\n");
-        status = ginterpreter_calcOperand(interpreter, in, valuePtr); //TODO
-        *valuePtr = interpreter->RAM + (SPU_INTEG_TYPE)**valuePtr;
+        if(ginterpreter_calcOperand(context, valuePtr) != 0)
+            return ginterpreter_status_BadMemCall;
+        *valuePtr = context->RAM + (SPU_INTEG_TYPE)**valuePtr;
     } else if (format.isRegister) {
         fprintf(stderr, "Register!\n");
         char regCode = 0;
-        regCode = fgetc(in);
+        regCode = fgetc(context->inStream);
         if (regCode == EOF)
-            return 7;
+            return ginterpreter_status_FileErr;
         
         if (regCode < 1 || regCode >= MAX_REGISTERS) 
-            return 4;
+            return ginterpreter_status_BadReg;
 
-        *valuePtr = interpreter->Registers + regCode;
+        *valuePtr = context->Registers + regCode;
     } else if (format.calculation != gCalc_none) {
         fprintf(stderr, "Calculation!\n");
-        status = ginterpreter_calcOperand(interpreter, in, valuePtr);
-        SPU_FLOAT_TYPE result = **valuePtr;
-        status = ginterpreter_calcOperand(interpreter, in, valuePtr);
+        if(ginterpreter_calcOperand(context, valuePtr) != 0)
+            return ginterpreter_status_BadCalc;
 
+        SPU_FLOAT_TYPE result = **valuePtr;
+
+        if(ginterpreter_calcOperand(context, valuePtr) != 0)
+            return ginterpreter_status_BadCalc;
 
         if (format.calculation == gCalc_mul) 
             result *= **valuePtr;
@@ -173,52 +178,55 @@ int ginterpreter_calcOperand(ginterpreter *interpreter, FILE *in, SPU_FLOAT_TYPE
             result -= **valuePtr;
         else {
             fprintf(stderr, "FATAL_ERROR: bad calculation option provided in bytecode\n");
-            return 3;
+            return ginterpreter_status_BadCalc;
         }
 
-        ret_val = result;
-        *valuePtr = &ret_val;
+        context->calcOp_ret = result;
+        *valuePtr = &context->calcOp_ret;
     } else {
         fprintf(stderr, "Literal!\n");
-        if (!fread(&ret_val, sizeof(SPU_FLOAT_TYPE), 1, in)) {
-            if (feof(in) || ferror(in))
-                return 7;
-            return 5;
+        if (fread(&context->calcOp_ret, sizeof(SPU_FLOAT_TYPE), 1, context->inStream) != 1) {
+            if (feof(context->inStream) || ferror(context->inStream))
+                return ginterpreter_status_FileErr;
+            return ginterpreter_status_BadLit;
         }
-        *valuePtr = &ret_val;
-        fprintf(stderr, "ret_val = %lli\n", ret_val);
+        *valuePtr = &context->calcOp_ret;
+        fprintf(stderr, "ret_val = %lli\n", context->calcOp_ret);
     }
-    return 0;
+    return ginterpreter_status_OK;
 }
 
 
-int ginterpreter_runFromFile(ginterpreter *interpreter, FILE *in)
+ginterpreter_status ginterpreter_runFromFile(ginterpreter *context, FILE *in)
 {
     char opcode;
-    in_TMP = in;
-    fread(&opcode, sizeof(char), 1, in);        //TODO check fread for errors
+    context->inStream = in;
+    fread(&opcode, sizeof(char), 1, context->inStream);
+    if (ferror(in))
+        return ginterpreter_status_FileErr;
+
     while (!feof(in)) {
         fprintf(stderr, "opcode = %d (%s)\n", opcode, gDisassambleTable[opcode]);
         size_t operandsCnt = 0;
         
         SPU_FLOAT_TYPE *Operands[MAX_OPERANDS + 1] = {};
-        int status = 0;
-        while ((status = ginterpreter_calcOperand(interpreter, in, &Operands[operandsCnt])) == 0) {
+        ginterpreter_status status = ginterpreter_status_OK;
+        while ((status = ginterpreter_calcOperand(context, &Operands[operandsCnt])) == ginterpreter_status_OK) {
             if (Operands[operandsCnt] == NULL)
-                return 6666;                            //TODO add some error code for the case
+                return ginterpreter_status_BadOperand;                            
             ++operandsCnt;
         }
-        if (status == 0)
-            assert(!"WTF?!");
-        if (status != 1)
+
+        assert(status != ginterpreter_status_OK && "This should never happen, because all operand sequences end with empty format");
+
+        if (status != ginterpreter_status_EmptyFormat)
             return status;
 
-        (*((void (*)(ginterpreter *, SPU_FLOAT_TYPE **))interpreter->commandJumpTable[opcode][operandsCnt]))(interpreter, Operands);
+        (*((void (*)(ginterpreter *, SPU_FLOAT_TYPE **))context->commandJumpTable[opcode][operandsCnt]))(context, Operands);
 
-        fread(&opcode, sizeof(char), 1, in);
+        fread(&opcode, sizeof(char), 1, context->inStream);
+        if (ferror(in))
+            return ginterpreter_status_FileErr;
     }
-
-    return 0;
+    return ginterpreter_status_OK;
 }
-
-

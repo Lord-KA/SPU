@@ -2,6 +2,8 @@
 #define GUTILS_H
 
 #include <string.h>
+#include <assert.h>
+#include <stdio.h>
 #include <ctype.h>
 
 static bool gPtrValid(const void* ptr)       
@@ -132,4 +134,28 @@ bool isDouble(const char *haystack) {
     else 
         return false;
 }
+
+bool getline(char *buffer, size_t bufferLen, FILE *in) 
+{
+    assert(gPtrValid(buffer));
+    assert(gPtrValid(in));
+
+    char c;
+    size_t curLen = 0;
+    c = fgetc(in);
+    while (!feof(in) && c != '\n') {
+        if (curLen < bufferLen - 1) 
+            buffer[curLen++] = c;
+        else 
+            goto finish;
+        c = fgetc(in);
+    }
+    if (ferror(in))
+        return 0;
+finish:
+    buffer[curLen++] = '\0';
+    return 1;
+}
+
+
 #endif

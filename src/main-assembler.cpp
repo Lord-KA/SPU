@@ -37,14 +37,28 @@ int main(int argc, char **argv) {
         }
     }
     if (fileName != NULL) {
-        out = fopen(fileName, "w");         //TODO check fopen
+        out = fopen(fileName, "wb");         //TODO check fopen
+        if (out == NULL) {
+            fprintf(stderr, "Failed to open the file!\n");
+            return 1;
+        }
     }
 
-    // printf("mode = %d\n", mode);
-    if (mode == gAssemble)
-        gassembly_assembleFromFile(in, out);
-    else if (mode == gDisassamble)
-        gassembly_disassembleFromFile(in, out);
-    else
+    // fprintf(stderr, "mode = %d\n", mode);
+    gassembly_status status = gassembly_status_OK;
+    if (mode == gAssemble) {
+        status = gassembly_assembleFromFile(in, out);
+        if (status != gassembly_status_OK)
+            fprintf(stderr, "Error during assembling, error_code = %d (%s)\n", status, gassembly_statusMsg[status]);
+    }
+    else if (mode == gDisassamble) {
+        status = gassembly_disassembleFromFile(in, out);
+        if (status != gassembly_status_OK)
+            fprintf(stderr, "Error during disassembling, error_code = %d (%s)\n", status, gassembly_statusMsg[status]);
+    }
+    else {
         fprintf(stderr, "ERROR: unknown mode, -h for help\n");
+        return 1;
+    }
+    return 0;
 }
