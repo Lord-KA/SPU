@@ -1,0 +1,6 @@
+main:
+push 134
+push 1234
+mul
+out
+ret

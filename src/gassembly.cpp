@@ -125,14 +125,15 @@ gassembly_status gassembly_putOperand(const char *operand, FILE *out)
         ++operand;
 
     size_t operandLen = strlen(operand);
-
+    fprintf(stderr, "operand = #%s# (%d)\n", operand, operandLen);
     /* cropping closing spaces */
     char *iter = (char*)(operand + operandLen - 1);
     while (isspace(*iter)) {
         --iter;
         --operandLen;
     }
-    *(iter + 1) = '\0';
+    if (iter - operand < operandLen - 1)
+        *(iter + 1) = '\0';
 
     if (operandLen == 0)
         return gassembly_status_Empty;
@@ -204,7 +205,7 @@ gassembly_status gassembly_putOperand(const char *operand, FILE *out)
         size_t i = 0;
         while (i < GASSEMBLY_MAX_LABLES && strcmp(gassembly_Lables[i], lable) != 0)
             ++i;
-            if (i == GASSEMBLY_MAX_LABLES)      // Crutch for UB cases with jmp to unknown lable
+        if (i == GASSEMBLY_MAX_LABLES)      // Crutch for UB cases with jmp to unknown lable
             --i;
 
         if (fwrite(&gassembly_Fixups[i], sizeof(SPU_INTEG_TYPE), 1, out) != 1)
@@ -296,13 +297,15 @@ gassembly_status gassembly_putOperand(const char *operand, FILE *out)
 
 gassembly_status gassembly_putOpening(FILE *out, const bool fixupRun, const size_t offset)
 {
-    gassembly_status status = gassembly_assembleFromLine("call main  \0", out, fixupRun, offset);
+    char buffer_1[GASSEMBLY_MAX_LINE_SIZE] = "call main";
+    gassembly_status status = gassembly_assembleFromLine("call main", out, fixupRun, offset);
     if (status > 1) {
         fprintf(stderr, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], "call main   ; This is an automaticly added opening line");
         return status;
     }
     
-    status = gassembly_assembleFromLine("exit   \0", out, fixupRun, offset);
+    char buffer_2[GASSEMBLY_MAX_LINE_SIZE] = "exit";
+    status = gassembly_assembleFromLine("exit", out, fixupRun, offset);
     if (status > 1) {
         fprintf(stderr, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], "exit   ; This is an automaticly added opening line"); 
         return status;
@@ -318,14 +321,14 @@ gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out)
     gassembly_status status; 
     const long startPos = ftell(in);
     const long offset   = ftell(out);
-    FILE *devNull = tmpfile();
+    FILE *devNull = tmpfile(); 
     bool fixupRun = true;
-
 
     size_t line = 1;
     if (!getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in))
         return gassembly_status_ErrFile;
 
+    fprintf(stderr, "line = #%s#\n", buffer);
     status = gassembly_putOpening(devNull, fixupRun, offset);
     if (status != gassembly_status_OK)
         return status;
@@ -348,7 +351,7 @@ gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out)
     if (!getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in))
         return gassembly_status_ErrFile;
         
-    status = gassembly_putOpening(devNull, fixupRun, offset);
+    status = gassembly_putOpening(out, fixupRun, offset);
     if (status != gassembly_status_OK)
         return status;
 

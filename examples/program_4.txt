@@ -1,0 +1,19 @@
+main:
+    push 12
+    push 13
+    mov ax, 10
+    push ax
+    mov bx, 99
+    push bx
+    call func_1
+    push ax
+    out
+    out
+    out
+    out
+    out
+    ret
+
+func_1:
+    add ax, bx
+    ret

@@ -1,0 +1,15 @@
+;push (12 - 24)
+main:
+;push 104 * (102 - 179)
+mov [12 + 23],  104 * (102 - 179 - 10000)
+push [12 + 23]
+push [(12 + 23)]
+mov ax, 0-203
+mov bx, 12
+mov [bx], ax
+add [12 + 23], [bx]
+push [12 + (23)]
+out
+out
+out
+ret
