@@ -8,6 +8,8 @@
 
 #define POP(valPtr) stack_pop (&context->Stack, (valPtr))
 #define PUSH(val)   stack_push(&context->Stack, (val))
+#define GET_POS()     ftell(context->inStream)
+#define SET_POS(pos)  fseek(context->inStream, pos, SEEK_SET)
 
 #define ARG_1 **valList
 #define ARG_2 **(valList + 1)
@@ -87,9 +89,26 @@ COMMAND(out, Out, false, 1, ({
 
 COMMAND(jmp, Jmp, true, 1, ({
     SPU_INTEG_TYPE pos = ARG_1;
-    fseek(context->inStream, pos, SEEK_SET);
+    SET_POS(pos);
+    // fseek(context->inStream, pos, SEEK_SET);
 }))
 
+COMMAND(call, Call, true, 1, ({
+    SPU_INTEG_TYPE pos_1 = ARG_1;
+    SPU_INTEG_TYPE pos_2 = GET_POS();
+    PUSH(pos_2);
+    SET_POS(pos_1);
+}))
+
+COMMAND(ret, Ret, true, 0, ({
+    SPU_INTEG_TYPE pos;
+    POP(&pos);
+    SET_POS(pos);
+}))
+
+COMMAND(exit, Exit, true, 0, ({
+    exit(0);
+}))
 
 #undef PUSH
 #undef POP

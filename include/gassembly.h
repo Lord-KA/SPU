@@ -41,7 +41,7 @@ static const char gassembly_statusMsg[gassembly_status_Cnt][GASSEMBLY_MAX_LINE_S
         "Error in format parsing (bad format provided?)",
     };
     
-gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun);
+gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun, const long offset);
 
 gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out);
 

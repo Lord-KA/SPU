@@ -294,22 +294,44 @@ gassembly_status gassembly_putOperand(const char *operand, FILE *out)
     return gassembly_status_OK;
 }
 
+gassembly_status gassembly_putOpening(FILE *out, const bool fixupRun, const size_t offset)
+{
+    gassembly_status status = gassembly_assembleFromLine("call main  \0", out, fixupRun, offset);
+    if (status > 1) {
+        fprintf(stderr, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], "call main   ; This is an automaticly added opening line");
+        return status;
+    }
+    
+    status = gassembly_assembleFromLine("exit   \0", out, fixupRun, offset);
+    if (status > 1) {
+        fprintf(stderr, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], "exit   ; This is an automaticly added opening line"); 
+        return status;
+    }
+
+    return gassembly_status_OK;
+}
 
 gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out) 
 {
     char buffer[GASSEMBLY_MAX_LINE_SIZE] = {};
     
     gassembly_status status; 
-    long startPos = ftell(in);
+    const long startPos = ftell(in);
+    const long offset   = ftell(out);
     FILE *devNull = tmpfile();
     bool fixupRun = true;
+
 
     size_t line = 1;
     if (!getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in))
         return gassembly_status_ErrFile;
 
+    status = gassembly_putOpening(devNull, fixupRun, offset);
+    if (status != gassembly_status_OK)
+        return status;
+
     while (!feof(in)) {
-        status = gassembly_assembleFromLine(buffer, devNull, fixupRun);
+        status = gassembly_assembleFromLine(buffer, devNull, fixupRun, offset);
         if (status > 1) {
             fprintf(stderr, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], buffer);      //TODO
             return status;
@@ -325,8 +347,13 @@ gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out)
     fseek(in, startPos, SEEK_SET);
     if (!getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in))
         return gassembly_status_ErrFile;
+        
+    status = gassembly_putOpening(devNull, fixupRun, offset);
+    if (status != gassembly_status_OK)
+        return status;
+
     while (!feof(in)) {
-        status = gassembly_assembleFromLine(buffer, out, fixupRun);
+        status = gassembly_assembleFromLine(buffer, out, fixupRun, offset);
         if (status > 1) {
             fprintf(stderr, "Error occured during assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], buffer);      //TODO
             return status;
@@ -383,7 +410,7 @@ bool gassembly_getLable(const char *buffer, char **beg, char **end)
 }
 
 
-gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun) 
+gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun, const long offset) 
 {
     /* 
      * WARNING: `buffer` must be a null terminated
@@ -422,7 +449,8 @@ gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const
             }
             strncpy(gassembly_Lables[i], lableBeg, lableEnd - lableBeg);
             assert(gassembly_Fixups[i] == 0);
-            gassembly_Fixups[i] = ftell(out);
+            assert(ftell(out) >= offset);
+            gassembly_Fixups[i] = ftell(out) - offset;
         }
         return gassembly_status_Empty;
     }
