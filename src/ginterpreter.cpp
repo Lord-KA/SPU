@@ -19,6 +19,7 @@ void ginterpreter_dtor(ginterpreter *context)
     stack_dtor(&context->Stack);
 
     free(context->RAM);
+    free(context->Buffer);
 }
 
 /** 
@@ -38,12 +39,8 @@ ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TY
 
     ginterpreter_status status = ginterpreter_status_OK;
 
-    if (fread(&format, sizeof(format), 1, context->inStream) != 1){
-        fprintf(stderr, "Failed to read format!\n");
-        if (feof(context->inStream) || ferror(context->inStream))
-            return ginterpreter_status_FileErr;
-        return ginterpreter_status_BadFormat;
-    }
+    format = *(operandFormat*)(context->bufCur);
+    context->bufCur += sizeof(format);
 
     if(!operandFormat_formatVerify(format))
         return ginterpreter_status_BadFormat;
@@ -61,9 +58,8 @@ ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TY
     } else if (format.isRegister) {
         fprintf(stderr, "Register!\n");
         char regCode = 0;
-        regCode = fgetc(context->inStream);
-        if (regCode == EOF)
-            return ginterpreter_status_FileErr;
+        regCode = *context->bufCur;
+        ++context->bufCur;
         
         if (regCode < 1 || regCode >= MAX_REGISTERS) 
             return ginterpreter_status_BadReg;
@@ -94,11 +90,9 @@ ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TY
         *valuePtr = &context->calcOp_ret;
     } else {
         fprintf(stderr, "Literal!\n");
-        if (fread(&context->calcOp_ret, sizeof(SPU_FLOAT_TYPE), 1, context->inStream) != 1) {
-            if (feof(context->inStream) || ferror(context->inStream))
-                return ginterpreter_status_FileErr;
-            return ginterpreter_status_BadLit;
-        }
+
+        context->calcOp_ret = *(SPU_FLOAT_TYPE*)(context->bufCur);
+        context->bufCur += sizeof(SPU_FLOAT_TYPE);
         *valuePtr = &context->calcOp_ret;
         fprintf(stderr, "ret_val = %lli\n", context->calcOp_ret);
     }
@@ -109,12 +103,30 @@ ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TY
 ginterpreter_status ginterpreter_runFromFile(ginterpreter *context, FILE *in)
 {
     char opcode;
-    context->inStream = in;
-    fread(&opcode, sizeof(char), 1, context->inStream);
+
+    fseek(in, 0L, SEEK_END);
+    context->buflen = ftell(in);
+    fseek(in, 0L, SEEK_SET);
+    context->Buffer = (char*)calloc(context->buflen, sizeof(char));
+
+    fread(context->Buffer, sizeof(char), context->buflen, in);
+
     if (ferror(in))
         return ginterpreter_status_FileErr;
 
-    while (!feof(in)) {
+    return ginterpreter_runFromBuffer(context);
+}
+
+ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *context)
+{
+    char opcode;
+
+    context->bufCur = context->Buffer;
+
+    opcode = *context->bufCur;
+    ++context->bufCur;
+
+    while (context->bufCur < context->Buffer + context->buflen) {
         fprintf(stderr, "opcode = %d (%s)\n", opcode, gDisassambleTable[opcode]);
         size_t operandsCnt = 0;
         
@@ -133,9 +145,8 @@ ginterpreter_status ginterpreter_runFromFile(ginterpreter *context, FILE *in)
 
         (*((void (*)(ginterpreter *, SPU_FLOAT_TYPE **))context->commandJumpTable[opcode][operandsCnt]))(context, Operands);
 
-        fread(&opcode, sizeof(char), 1, context->inStream);
-        if (ferror(in))
-            return ginterpreter_status_FileErr;
+        opcode = *context->bufCur;
+        ++context->bufCur;
     }
     return ginterpreter_status_OK;
 }

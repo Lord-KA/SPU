@@ -8,8 +8,8 @@
 
 #define POP(valPtr) stack_pop (&context->Stack, (valPtr))
 #define PUSH(val)   stack_push(&context->Stack, (val))
-#define GET_POS()     ftell(context->inStream)
-#define SET_POS(pos)  fseek(context->inStream, pos, SEEK_SET)
+#define GET_POS()     (context->bufCur - context->Buffer)
+#define SET_POS(pos)  (context->bufCur = context->Buffer + pos)
 
 #define ARG_1 **valList
 #define ARG_2 **(valList + 1)

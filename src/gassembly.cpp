@@ -125,7 +125,6 @@ gassembly_status gassembly_putOperand(const char *operand, FILE *out)
         ++operand;
 
     size_t operandLen = strlen(operand);
-    fprintf(stderr, "operand = #%s# (%d)\n", operand, operandLen);
     /* cropping closing spaces */
     char *iter = (char*)(operand + operandLen - 1);
     while (isspace(*iter)) {

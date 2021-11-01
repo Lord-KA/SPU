@@ -45,6 +45,8 @@ static const char ginterpreter_statusMsg[ginterpreter_status_Cnt][GASSEMBLY_MAX_
 
 ginterpreter_status ginterpreter_runFromFile(ginterpreter *interpreter, FILE *in);
 
+ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *interpreter);
+
 typedef void (*OpcodeFunctionPtr)(ginterpreter *, SPU_FLOAT_TYPE **);
 
 struct ginterpreter {
@@ -55,7 +57,11 @@ struct ginterpreter {
 
     SPU_FLOAT_TYPE *RAM;
 
-    FILE *inStream = NULL;
+    //FILE *inStream = NULL;
+
+    char *Buffer = NULL;
+    char *bufCur = NULL;
+    long  buflen = -1;
 
     SPU_FLOAT_TYPE calcOp_ret = 0;
 
