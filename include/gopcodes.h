@@ -6,27 +6,25 @@
 
 #include "gconfig.h"
 
-
+/* Filling gCommand enum with values from commands.tpl */
+#define COMMAND(name, Name, isFirst, ...) COMMAND_IS_FIRST_##isFirst(name, Name, isFirst)
+#define COMMAND_IS_FIRST_true(name, Name, isFirst) g##Name ,
+#define COMMAND_IS_FIRST_false(...)
 enum gCommand : unsigned char {
-    gIdle = 0,
-    gPush,
-    gPop,
-    gMul,
-    gMov,
-    gAdd,
-    gSub,
-    gOut,
-    gJmp,
-    gCnt
+    
+    #include "commands.tpl"
+    gCnt,
 };
+#undef COMMAND_IS_FIRST_true
 
-enum argType {
-    reg,
-    num
-};
-
-static const char gDisassambleTable[gCnt][10] = {"idle", "push", "pop", "mul", "mov", "add", "sub", "out", "jmp"}; 
-
+/* Filling DisassambleTable with values from commands.tpl */
+#define COMMAND_IS_FIRST_true(name, Name, isFirst) #name ,
+static const char gDisassambleTable[gCnt][10] = {
+    #include "commands.tpl"
+    }; 
+#undef COMMAND_IS_FIRST_true
+#undef COMMAND_IS_FIRST_false
+#undef COMMAND
 
 /** 
  * Below is used for universal opcode operand formating 

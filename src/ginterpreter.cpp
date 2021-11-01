@@ -8,6 +8,10 @@ void ginterpreter_ctor(ginterpreter *context)
     if (context->RAM == NULL) {
         fprintf(stderr, "ERROR: Failed to allocate RAM memory!\n");
     }
+    /* Filling commandJumpTable with fuction pointers defined in commands.tpl */
+    #define COMMAND(name, Name, isFirst, argc, code) context->commandJumpTable[g##Name][argc] = (OpcodeFunctionPtr)&ginterpreter_##name##_##argc;
+    #include "commands.tpl"
+    #undef COMMAND
 }
 
 void ginterpreter_dtor(ginterpreter *context)
@@ -16,101 +20,6 @@ void ginterpreter_dtor(ginterpreter *context)
 
     free(context->RAM);
 }
-
-
-/**
- * `SPU_FLOAT_TYPE **valList` is a null-terminated list of opcode operands with length of `MAX_OPERANDS + 1`
- */
-
-void ginterpreter_idle(ginterpreter *context, SPU_FLOAT_TYPE **valList)
-{
-    return;
-}
-
-void ginterpreter_push_1  (ginterpreter *context, SPU_FLOAT_TYPE **valList)
-{
-    stack_push(&context->Stack, **valList);
-}
-
-void ginterpreter_pop     (ginterpreter *context, SPU_FLOAT_TYPE **valList)
-{
-    stack_pop(&context->Stack, NULL);
-}
-
-void ginterpreter_pop_1   (ginterpreter *context, SPU_FLOAT_TYPE **valList)
-{
-    stack_pop(&context->Stack, *valList);
-}
-
-void ginterpreter_add     (ginterpreter *context, SPU_FLOAT_TYPE **valList)
-{
-    SPU_FLOAT_TYPE val_1, val_2;
-
-    stack_pop(&context->Stack, &val_1);
-    stack_pop(&context->Stack, &val_2);
-
-    stack_push(&context->Stack, val_1 + val_2);
-}
-
-void ginterpreter_add_2   (ginterpreter *context, SPU_FLOAT_TYPE **valList)
-{
-    **valList += **(valList + 1);
-}
-
-void ginterpreter_sub     (ginterpreter *context, SPU_FLOAT_TYPE **valList)
-{
-    SPU_FLOAT_TYPE val_1, val_2;
-
-    stack_pop(&context->Stack, &val_1);
-    stack_pop(&context->Stack, &val_2);
- 
-    stack_push(&context->Stack, val_1 - val_2);
-}
-
-void ginterpreter_sub_2  (ginterpreter *context, SPU_FLOAT_TYPE **valList)
-{
-    **valList -= **(valList + 1);
-}
-
-void ginterpreter_mul    (ginterpreter *context, SPU_FLOAT_TYPE **valList)
-{
-    SPU_FLOAT_TYPE val_1, val_2;
-
-    stack_pop(&context->Stack, &val_1);
-    stack_pop(&context->Stack, &val_2);
-
-    stack_push(&context->Stack, val_1 * val_2);
-}
-
-void ginterpreter_mul_2  (ginterpreter *context, SPU_FLOAT_TYPE **valList)
-{
-    **valList *= **(valList + 1);
-}
-
-void ginterpreter_mov_2  (ginterpreter *context, SPU_FLOAT_TYPE **valList)
-{
-    **valList = **(valList + 1);
-}
-
-void ginterpreter_out    (ginterpreter *context, SPU_FLOAT_TYPE **valList)
-{
-    SPU_FLOAT_TYPE val;
-    stack_pop(&context->Stack, &val);
-    printf("%d\n", val);
-}
-
-void ginterpreter_out_1  (ginterpreter *context, SPU_FLOAT_TYPE **valList)
-{
-    printf("%d\n", **valList);
-}
-
-void ginterpreter_jmp_1  (ginterpreter *context, SPU_FLOAT_TYPE**valList)
-{
-    SPU_INTEG_TYPE pos = **valList;
-    fprintf(stderr, "pos = %lli\n", pos);
-    fseek(context->inStream, pos, SEEK_SET);
-}
-
 
 /** 
  * returns:
