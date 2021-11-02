@@ -33,7 +33,7 @@ static const char gassembly_statusMsg[gassembly_status_Cnt][GASSEMBLY_MAX_LINE_S
         "Error in literal parsing",
         "Error in register parsing",
         "Error in calculation parsing",
-        "Error in lable parsing",
+        "Error in lable parsing (use of unknown lable, or a typo in register name)",
         "Error: bad operand ptr provided",
         "Error in file IO",
         "Error in fixup table",

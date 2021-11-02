@@ -56,6 +56,8 @@ bool strnConsistsChrs(const char *haystack, const char* needles, size_t haystack
     return 0;
 }
 
+#include <stdio.h>
+
 bool isInteger(const char *haystack) 
 {
     /* 
@@ -67,12 +69,11 @@ bool isInteger(const char *haystack)
     while (isspace(*iter))
         ++iter;
 
-
     /* for hexadecimal and octal support */
     if (iter - haystack < strlen(haystack) - 1
             && *iter == '0'
             && (*(iter + 1) == 'o' || *(iter + 1) == 'x')) {
-        if ((*iter + 1) == 'x')
+        if (*(iter + 1) == 'x')
             hexadecimalMode = true;
         iter += 2;
     }

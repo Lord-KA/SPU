@@ -1,0 +1,78 @@
+qsolver:            ;   input via ax, bx, cx;   output with dx and ex, they eq [INF] if there is inf solutions and [NAN] if none
+    cmp ax, 0x0
+    jeq linear_case
+    DET:
+    mov [DET], bx
+    mul [DET], [DET]
+    mov fx, 0x4             ; fx is a tmp var for storing  4*a*c 
+    mul fx, ax
+    mul fx, cx
+    sub [DET], fx
+    cmp [DET], 0x0
+    out [DET]
+    sqrt [DET]
+    jeq quadric_zero
+    jl no_solutions
+    div [DET], 2
+    div [DET], ax
+    mov dx, 0-bx
+    div dx, 2
+    div dx, ax
+    mov ex, dx
+    add ex, [DET]
+    sub dx, [DET]
+    jmp finish
+
+linear_case:
+    cmp bx, 0x0
+    jeq bx_zero
+    jmp linear_basic
+
+bx_zero:
+    cmp cx, 0x0
+    jeq inf_solutions
+    jmp no_solutions
+
+linear_basic:
+    div cx, bx
+    mov dx, cx
+    mov ex, [NAN]
+    jmp finish
+
+no_solutions:
+    mov dx, [NAN]
+    mov ex, [NAN]
+    jmp finish
+
+inf_solutions:
+    mov dx, [INF]
+    mov ex, [INF]
+    jmp finish
+
+quadric_zero:
+    mov dx, bx
+    mul dx, 0-1
+    div dx, 2
+    div dx, ax
+    mov ex, dx
+    jmp finish
+
+finish:
+    ret 
+
+
+main:
+    INF:
+    mov [INF], 0xffffffffff
+    NAN:
+    mov [NAN], 0xfafafafafa
+
+    mov ax, 0
+    mov bx, 13
+    mov cx, 0-169
+    call qsolver
+    out dx
+    out ex
+
+    ret
+

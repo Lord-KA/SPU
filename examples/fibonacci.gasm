@@ -1,0 +1,28 @@
+main:
+    mov ax, 10
+    call fib
+    out bx
+    ret
+
+fib:    ; input via ax, output via bx
+    cmp ax, 0x0
+    mov bx, 0x0
+    jeq finish
+
+    cmp ax, 0x1
+    mov bx, 0x1
+    jeq finish
+
+    dec ax
+    push ax
+    call fib
+    pop ax
+    dec ax
+    push bx
+    call fib
+    pop cx
+    add bx, cx
+    
+    
+    finish:
+    ret

@@ -65,6 +65,7 @@ struct ginterpreter {
 
     SPU_FLOAT_TYPE calcOp_ret = 0;
 
+    int cmpReg = 0;
     // ginterpreter_status status = ginterpreter_status_OK;  //TODO?
 } typedef ginterpreter;
 

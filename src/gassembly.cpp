@@ -107,7 +107,7 @@ static bool isLable(const char *buffer)
  *              6 = Bad operand ptr
  *
  */
-gassembly_status gassembly_putOperand(const char *operand, FILE *out) 
+gassembly_status gassembly_putOperand(const char *operand, FILE *out, const bool fixupRun) 
 {
     /*
      * WARNING: `operand` should be a null-terminated string
@@ -191,6 +191,7 @@ gassembly_status gassembly_putOperand(const char *operand, FILE *out)
 
     } else if (isLable(operand)) {
         /* Lable case */
+        fprintf(stderr, "Lable case!\n");
         format.isMemCall  = 0;
         format.isRegister = 0;
         format.calculation = gCalc_none;
@@ -202,11 +203,13 @@ gassembly_status gassembly_putOperand(const char *operand, FILE *out)
         if (sscanf(operand, "%s", lable) != 1)
             return gassembly_status_ErrLable;
         size_t i = 0;
-        while (i < GASSEMBLY_MAX_LABLES && strcmp(gassembly_Lables[i], lable) != 0)
-            ++i;
-        if (i == GASSEMBLY_MAX_LABLES)      // Crutch for UB cases with jmp to unknown lable
-            --i;
-
+        if (!fixupRun) {
+    
+            while (i < GASSEMBLY_MAX_LABLES && strcmp(gassembly_Lables[i], lable) != 0)
+                ++i;
+            if (i == GASSEMBLY_MAX_LABLES)      
+                return gassembly_status_ErrLable;
+        }
         if (fwrite(&gassembly_Fixups[i], sizeof(SPU_INTEG_TYPE), 1, out) != 1)
             return gassembly_status_ErrFile;
 
@@ -225,7 +228,7 @@ gassembly_status gassembly_putOperand(const char *operand, FILE *out)
         if (fwrite(&format, sizeof(format), 1, out) != 1)
             return gassembly_status_ErrFile;
         
-        gassembly_putOperand(subOperand, out);
+        gassembly_putOperand(subOperand, out, fixupRun);
     } 
     else if (*operand == '(' && *(operand + operandLen - 1) == ')' ) {
         /* Brackets calculation case */      
@@ -233,7 +236,7 @@ gassembly_status gassembly_putOperand(const char *operand, FILE *out)
         char subOperand[GASSEMBLY_MAX_LINE_SIZE] = {};
         strncpy(subOperand, operand + 1, operandLen - 2);
 
-        gassembly_putOperand(subOperand, out);
+        gassembly_putOperand(subOperand, out, fixupRun);
     } else {
         /* Resolving calculations case */
         char *addPos = findFirstExternalOp(operand, '+');
@@ -285,8 +288,8 @@ gassembly_status gassembly_putOperand(const char *operand, FILE *out)
         ++opPos;
         strncpy(subOperand_2, opPos,  operandLen - (opPos - operand));
 
-        int status_1 = gassembly_putOperand(subOperand_1, out);
-        int status_2 = gassembly_putOperand(subOperand_2, out);
+        int status_1 = gassembly_putOperand(subOperand_1, out, fixupRun);
+        int status_2 = gassembly_putOperand(subOperand_2, out, fixupRun);
         if (status_1 != 0 || status_2 != 0)
             return gassembly_status_ErrCalc;
     }
@@ -456,7 +459,7 @@ gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const
         }
         return gassembly_status_Empty;
     }
-
+    
 
     char   keyword[GASSEMBLY_MAX_LINE_SIZE] = {};
     char operand_1[GASSEMBLY_MAX_LINE_SIZE] = {};
@@ -465,8 +468,8 @@ gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const
     if (sscanf(buffer, "%s", keyword) != 1)
         return gassembly_status_ErrFile;
 
-
     char opcode = (gOpcodeByKeyword(keyword));
+    fprintf(stderr, "opcode = %d (%s)\n", opcode, keyword);
     if (opcode == -1) {
         fprintf(stderr, "Bad opcode provided\n");
         return gassembly_status_ErrOpcode;
@@ -481,23 +484,34 @@ gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const
     while(*operands != '\0' && !isspace(*operands) && *operands != '[')
         ++operands;
 
-    char *delim = findFirstExternalOp(operands, ',');
+    while (isspace(*operands))
+        ++operands;
+
+    char *delim = NULL;
+    char operand[GASSEMBLY_MAX_LINE_SIZE] = {};
+
+    if (*operands == '\0')
+        goto finish;
+
+    delim = findFirstExternalOp(operands, ',');
 
     while (delim != NULL) {
         char operand[GASSEMBLY_MAX_LINE_SIZE] = {};
         assert(delim > operands);
         strncpy(operand, operands, delim - operands);
-        status = gassembly_putOperand(operand, out);             //TODO handle returned error codes
+        status = gassembly_putOperand(operand, out, fixupRun);             //TODO handle returned error codes
         if (status > 1)
             return status;
 
         operands = delim + 1;
         delim = findFirstExternalOp(operands, ',');
     }
-    status = gassembly_putOperand(operands, out);
+    strcpy(operand, operands);
+    status = gassembly_putOperand(operand, out, fixupRun);
     if (status > 1)
         return status;
 
+finish:
     operandFormat emptyFormat = {};
     if (fwrite(&emptyFormat, sizeof(emptyFormat), 1, out) != 1)
         return gassembly_status_ErrFile;
