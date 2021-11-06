@@ -68,7 +68,7 @@ static const char gassembly_statusMsg[gassembly_status_Cnt][GASSEMBLY_MAX_LINE_S
  * @param offset integer that states offset from file begining that is subtracted from curent file position (for future features)
  * @return assembly status code
  */
-static gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun, const long offset);
+gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun, const long offset);
 
 
 /**
@@ -77,7 +77,7 @@ static gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out
  * @param out filestream to assemble to
  * @return assembly status code
  */
-static gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out);
+gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out);
 
 
 /**
@@ -157,7 +157,7 @@ static int gOpcodeByKeyword(char *keyword);
  * @param out filestream to assemble to
  * @return assembly status code
  */
-static gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out);
+gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out);
 
 
 /**

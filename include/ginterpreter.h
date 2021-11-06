@@ -10,25 +10,7 @@
 #include <malloc.h>
 #include <assert.h>
 
-
 struct ginterpreter;
-
-
-/**
- * @brief interpreter constructor that allocates RAM, stack and fills commandJumpTable
- * @param interpreter pointer to mem for structure construction
- * @return interpreter status code
- */
-ginterpreter_status ginterpreter_ctor(ginterpreter *interpreter);
-
-
-/**
- * @brief interpreter destructor that frees RAM and stack
- * @param interpreter pointer to structure to be destroyed
- * @return interpreter status code (always OK)
- */
-void ginterpreter_dtor(ginterpreter *interpreter);
-
 
 enum ginterpreter_status {
     ginterpreter_status_OK = 0,         
@@ -42,7 +24,7 @@ enum ginterpreter_status {
     ginterpreter_status_BadOperand,
     ginterpreter_status_AllocErr,
     ginterpreter_status_Cnt,
-};
+} typedef ginterpreter_status;
 
 static const char ginterpreter_statusMsg[ginterpreter_status_Cnt][GASSEMBLY_MAX_LINE_SIZE] = {
         "OK",
@@ -56,22 +38,6 @@ static const char ginterpreter_statusMsg[ginterpreter_status_Cnt][GASSEMBLY_MAX_
         "Error in operands interpretation",
         "Error in memory allocation",
     };
-
-/**
- * @brief execute bytecode from filestream
- * @param interpreter pointer to interpreter struct
- * @param in filestream to execute
- * @return interpreter status code
- */
-ginterpreter_status ginterpreter_runFromFile(ginterpreter *interpreter, FILE *in);
-
-
-/**
- * @brief execute bytecode from buffer (actual logic is here)
- * @param interpreter pointer to interpreter struct
- * @return interpreter status code
- */
-ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *interpreter);
 
 
 typedef void (*OpcodeFunctionPtr)(ginterpreter *, SPU_FLOAT_TYPE **);       /// template pointer to a function with opcode's logic
@@ -95,6 +61,41 @@ struct ginterpreter {
 
     // ginterpreter_status status = ginterpreter_status_OK;  //TODO add error codes stack and dump it when necessary
 } typedef ginterpreter;
+
+
+
+/**
+ * @brief interpreter constructor that allocates RAM, stack and fills commandJumpTable
+ * @param interpreter pointer to mem for structure construction
+ * @return interpreter status code
+ */
+ginterpreter_status ginterpreter_ctor(ginterpreter *interpreter);
+
+
+/**
+ * @brief interpreter destructor that frees RAM and stack
+ * @param interpreter pointer to structure to be destroyed
+ * @return interpreter status code (always OK)
+ */
+ginterpreter_status ginterpreter_dtor(ginterpreter *interpreter);
+
+
+/**
+ * @brief execute bytecode from filestream
+ * @param interpreter pointer to interpreter struct
+ * @param in filestream to execute
+ * @return interpreter status code
+ */
+ginterpreter_status ginterpreter_runFromFile(ginterpreter *interpreter, FILE *in);
+
+
+/**
+ * @brief execute bytecode from buffer (actual logic is here)
+ * @param interpreter pointer to interpreter struct
+ * @return interpreter status code
+ */
+ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *interpreter);
+
 
 /**
  * @brief codegen of the opcodes logic happends here

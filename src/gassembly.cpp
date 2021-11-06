@@ -304,7 +304,7 @@ static gassembly_status gassembly_putOpening(FILE *out, const bool fixupRun, con
     return gassembly_status_OK;
 }
 
-static gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out) 
+gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out) 
 {
     char buffer[GASSEMBLY_MAX_LINE_SIZE] = {};
     
@@ -403,7 +403,7 @@ static bool gassembly_getLable(const char *buffer, char **beg, char **end)
     return true;
 }
 
-static gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun, const long offset) 
+gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun, const long offset) 
 {
     /* 
      * WARNING: `buffer` must be a null terminated
@@ -568,7 +568,7 @@ static gassembly_status gassembly_getOperand(FILE *in, FILE *out)
     return gassembly_status_OK;
 }
 
-static gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out) 
+gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out) 
 {
     char opcode;
     gassembly_status status = gassembly_status_OK;

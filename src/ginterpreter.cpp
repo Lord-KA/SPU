@@ -1,25 +1,28 @@
 #include "ginterpreter.h"
 
-void ginterpreter_ctor(ginterpreter *context)
+ginterpreter_status ginterpreter_ctor(ginterpreter *context)
 {
     stack_ctor(&context->Stack);
 
     context->RAM = (SPU_FLOAT_TYPE*)calloc(MAX_RAM_SIZE, sizeof(SPU_FLOAT_TYPE));
     if (context->RAM == NULL) {
         fprintf(stderr, "ERROR: Failed to allocate RAM memory!\n");
+        return ginterpreter_status_AllocErr;
     }
     /* Filling commandJumpTable with fuction pointers defined in commands.tpl */
     #define COMMAND(name, Name, isFirst, argc, code) context->commandJumpTable[g##Name][argc] = (OpcodeFunctionPtr)&ginterpreter_##name##_##argc;
     #include "commands.tpl"
     #undef COMMAND
+    return ginterpreter_status_OK;
 }
 
-void ginterpreter_dtor(ginterpreter *context)
+ginterpreter_status ginterpreter_dtor(ginterpreter *context)
 {
     stack_dtor(&context->Stack);
 
     free(context->RAM);
     free(context->Buffer);
+    return ginterpreter_status_OK;
 }
 
 /** 
