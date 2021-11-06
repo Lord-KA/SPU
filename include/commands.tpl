@@ -1,11 +1,22 @@
 /**
-  * COMMAND(name, Name, isFirst, argc, code)
-  *
-  * WARNING: isFirst must be `true` or `false`, not a digit or a string! 
-  * WARNING: function format is `void gassembly_func_n(gassembly *context, SPU_FLOAT_TYPE **valList)`
-  * 
-  * `SPU_FLOAT_TYPE **valList` is a null-terminated list of opcode operands with length of `MAX_OPERANDS + 1`
-  */
+ * @file Template file for gSPU with opcodes declarations and some basic macro to help out
+ * 
+ * COMMAND(name, Name, isFirst, argc, code)
+ *
+ * name - is an opcode name make out of letters, digits and `_`
+ *        (it is preferable to use only lowercase letters)
+ * Name - is the same name but with first capital letter
+ * isFirst - only a `true` of `false`, not a digit and not a string, 
+ *           is used to define just one of all opcode's declarations in enum.
+ * argc - the number of arguments in opcode (from 0 to MAX_OPERANDS)
+ * code - the implementation of the opcode's logic, preferably in `({})`
+ *        wrapper for less of a headache
+ *
+ * WARNING: isFirst must be `true` or `false`, not a digit or a string! 
+ * WARNING: function format is `void gassembly_func_n(gassembly *context, SPU_FLOAT_TYPE **valList)`
+ * 
+ * `SPU_FLOAT_TYPE **valList` is a null-terminated list of opcode operands with length of `MAX_OPERANDS + 1`
+ */
 
 #define POP(valPtr) stack_pop (&context->Stack, (valPtr))
 #define PUSH(val)   stack_push(&context->Stack, (val))
@@ -13,19 +24,30 @@
 #define SET_POS(pos)  (context->bufCur = context->Buffer + pos)
 #define CMP_REG (context->cmpReg)
 
+/**
+ * GET/SET_POS are used to get/set position in interpreted bytecode (like in jmp opcode)
+ */
+
 #define ARG_1 **valList
 #define ARG_2 **(valList + 1)
-/* WARNING: default max operands number is 2, you can change that in ./include/gconfig.h */
-#define ARG_3 **(valList + 2) 
+
+/**
+ * WARNING: default max operands number is 2, you can change that in ./include/gconfig.h
+ *
+ * #define ARG_n **(valList + n + 1) 
+ */
 
 COMMAND(idle, Idle, true, 0, ({
+    return;
+}))
+
+COMMAND(idle, Idle, false, 1, ({
     return;
 }))
 
 COMMAND(push, Push, true, 1, ({
     PUSH(ARG_1);
 }))
-
 
 COMMAND(pop, Pop, true, 0, ({
     POP(NULL);

@@ -8,7 +8,7 @@
 #include <ctype.h>
 
 
-char *findFirstExternalOp(const char *buffer, const char operation)
+static char *findFirstExternalOp(const char *buffer, const char operation)
 {
     char *opPos = (char*)buffer;  
     size_t bufferLen = strlen(buffer);
@@ -95,19 +95,7 @@ static bool isLable(const char *buffer)
     return true;
 }
 
-/**
- *
- * returns status:
- *              0 = OK
- *              1 = Empty
- *              2 = Parsing error in Literal      case
- *              3 = Parsing error in Register     case
- *              4 = Parsing error in Calculations case
- *              5 = Parsing error in Lable        case
- *              6 = Bad operand ptr
- *
- */
-gassembly_status gassembly_putOperand(const char *operand, FILE *out, const bool fixupRun) 
+static gassembly_status gassembly_putOperand(const char *operand, FILE *out, const bool fixupRun) 
 {
     /*
      * WARNING: `operand` should be a null-terminated string
@@ -297,7 +285,7 @@ gassembly_status gassembly_putOperand(const char *operand, FILE *out, const bool
     return gassembly_status_OK;
 }
 
-gassembly_status gassembly_putOpening(FILE *out, const bool fixupRun, const size_t offset)
+static gassembly_status gassembly_putOpening(FILE *out, const bool fixupRun, const size_t offset)
 {
     char buffer_1[GASSEMBLY_MAX_LINE_SIZE] = "call main";
     gassembly_status status = gassembly_assembleFromLine("call main", out, fixupRun, offset);
@@ -316,7 +304,7 @@ gassembly_status gassembly_putOpening(FILE *out, const bool fixupRun, const size
     return gassembly_status_OK;
 }
 
-gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out) 
+static gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out) 
 {
     char buffer[GASSEMBLY_MAX_LINE_SIZE] = {};
     
@@ -370,12 +358,13 @@ gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out)
 
     size_t i = 0;       //TODO DEBUG
     while (*gassembly_Lables[i] != '\0') {
-        fprintf(stderr, "Lable = #%s#, Fixup = %d\n", gassembly_Lables[i], (SPU_INTEG_TYPE)gassembly_Fixups[i]); //DEBUG
+        fprintf(stderr, "Lable = #%s#, Fixup = %d\n", gassembly_Lables[i], (SPU_INTEG_TYPE)gassembly_Fixups[i]); //DEBUG TODO
         ++i;
     }
+    return gassembly_status_OK;
 }
 
-int gOpcodeByKeyword(char *keyword)
+static int gOpcodeByKeyword(char *keyword)
 {              
     size_t i = 0;
     while (i < gCnt && strcmp(keyword, gDisassambleTable[i])) {
@@ -386,7 +375,7 @@ int gOpcodeByKeyword(char *keyword)
     return i;
 }
 
-bool gassembly_getLable(const char *buffer, char **beg, char **end)
+static bool gassembly_getLable(const char *buffer, char **beg, char **end)
 {
     char *iter = (char*)buffer;
     while (isspace(*iter))
@@ -414,8 +403,7 @@ bool gassembly_getLable(const char *buffer, char **beg, char **end)
     return true;
 }
 
-
-gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun, const long offset) 
+static gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun, const long offset) 
 {
     /* 
      * WARNING: `buffer` must be a null terminated
@@ -518,18 +506,7 @@ finish:
     return gassembly_status_OK;
 }
 
-/** 
- * returns:
- *          0 - OK, got operand
- *          1 - OK, zero operand format, operand list end
- *          2 - ERROR: error in memory call (no suboperand provided?)
- *          3 - ERROR: error in calculation (no suboperand provided?)
- *          4 - ERROR: error in register 
- *          5 - ERROR: error in literal
- *          6 - ERROR: bad format provided
- *          7 - ERROR: file reading failed
- */
-gassembly_status gassembly_getOperand(FILE *in, FILE *out) 
+static gassembly_status gassembly_getOperand(FILE *in, FILE *out) 
 {
     gassembly_status status = gassembly_status_OK;
     operandFormat format;
@@ -591,7 +568,7 @@ gassembly_status gassembly_getOperand(FILE *in, FILE *out)
     return gassembly_status_OK;
 }
 
-gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out) 
+static gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out) 
 {
     char opcode;
     gassembly_status status = gassembly_status_OK;
@@ -619,3 +596,4 @@ gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out)
     }
     return gassembly_status_OK;
 }
+
