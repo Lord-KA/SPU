@@ -33,9 +33,11 @@
  * GET/SET_POS are used to get/set position in interpreted bytecode (like in jmp opcode)
  */
 
+
 #define ARG_1 (**valList)
 #define ARG_2 (**(valList + 1))
 #define ARG_3 (**(valList + 2))
+
 
 /**
  * WARNING: default max operands number is 3, you can change that in ./include/gconfig.h
@@ -249,6 +251,21 @@ COMMAND(sqrt, Sqrt, false, 1, ({
     ARG_1 = sqrt(tmp);
 }))
 
+
+COMMAND(dumpArgs, DumpArgs, true, 1, ({
+    PUSH(ARG_1);
+}))
+
+COMMAND(dumpArgs, DumpArgs, false, 2, ({
+    PUSH(ARG_1);
+    PUSH(ARG_2);
+}))
+
+COMMAND(dumpArgs, DumpArgs, false, 3, ({
+    PUSH(ARG_1);
+    PUSH(ARG_2);
+    PUSH(ARG_3);
+
 COMMAND(vflush, Vflush, true, 0, ({
     assert(VIDEO_WIDTH != -1 && VIDEO_HEIGHT != -1);
     for (size_t x = 0; x < VIDEO_WIDTH; ++x) {
@@ -264,6 +281,7 @@ COMMAND(vset, Vset, true, 3, ({
 
 COMMAND(stackDump, StackDump, true, 0, ({
     stack_dump(&context->Stack);
+
 }))
 
 #undef PUSH

@@ -23,7 +23,7 @@ FetchContent_Declare(
 FetchContent_Declare(
   gstack
   GIT_REPOSITORY https://github.com/Lord-KA/HopefullyUnkillableStack.git
-  GIT_TAG        release-1.0.2
+  GIT_TAG        release-1.0.3
 )
 
 FetchContent_GetProperties(googletest gstack)

@@ -1,0 +1,6 @@
+main:
+
+    dumpArgs 10
+    dumpArgs 29, 179
+    dumpArgs 29, 179, 9981
+   
