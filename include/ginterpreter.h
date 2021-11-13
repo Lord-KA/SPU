@@ -55,7 +55,8 @@ struct ginterpreter {
     char *bufCur = NULL;                    /// cursor to location in buffer that is now executed
     long  buflen = -1;                      /// length of the buffer
 
-    SPU_FLOAT_TYPE calcOp_ret = 0;          /// service var to hold value in when calculating literal operands
+    // SPU_FLOAT_TYPE calcOp_ret = 0;          /// service var to hold value in when calculating literal operands
+    stack calcOp_stack;
 
     int cmpReg = 0;                         /// service register for setting comp results in ( <0 when `a < b`, >0 when `a > b` and ==0 when `a == b` )
 

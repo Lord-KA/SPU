@@ -88,16 +88,21 @@ ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TY
             fprintf(stderr, "FATAL_ERROR: bad calculation option provided in bytecode\n");
             return ginterpreter_status_BadCalc;
         }
-
-        context->calcOp_ret = result;
-        *valuePtr = &context->calcOp_ret;
+        
+        stack_push(&context->calcOp_stack, result);
+        // context->calcOp_ret = result;
+        stack_top(&context->calcOp_stack, valuePtr);
+        // *valuePtr = &context->calcOp_ret;
     } else {
         fprintf(stderr, "Literal!\n");
 
-        context->calcOp_ret = *(SPU_FLOAT_TYPE*)(context->bufCur);
+        stack_push(&context->calcOp_stack, *(SPU_FLOAT_TYPE*)(context->bufCur));
+        // context->calcOp_ret = result;
+        // context->calcOp_ret = *(SPU_FLOAT_TYPE*);
         context->bufCur += sizeof(SPU_FLOAT_TYPE);
-        *valuePtr = &context->calcOp_ret;
-        fprintf(stderr, "ret_val = %lli\n", context->calcOp_ret);
+        stack_top(&context->calcOp_stack, valuePtr);
+        // *valuePtr = &context->calcOp_ret;
+        fprintf(stderr, "ret_val = %lli\n", **valuePtr);
     }
     return ginterpreter_status_OK;
 }
@@ -128,6 +133,7 @@ ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *context)
 
     opcode = *context->bufCur;
     ++context->bufCur;
+    stack_ctor(&context->calcOp_stack);
 
     while (context->bufCur < context->Buffer + context->buflen) {
         fprintf(stderr, "opcode = %d (%s)\n", opcode, gDisassambleTable[opcode]);
@@ -136,20 +142,29 @@ ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *context)
         SPU_FLOAT_TYPE *Operands[MAX_OPERANDS + 1] = {};
         ginterpreter_status status = ginterpreter_status_OK;
         while ((status = ginterpreter_calcOperand(context, &Operands[operandsCnt])) == ginterpreter_status_OK) {
-            if (Operands[operandsCnt] == NULL)
+            if (Operands[operandsCnt] == NULL) {
+                stack_dtor(&context->calcOp_stack);
                 return ginterpreter_status_BadOperand;                            
+            }
             ++operandsCnt;
         }
 
         assert(status != ginterpreter_status_OK && "This should never happen, because all operand sequences end with empty format");
 
-        if (status != ginterpreter_status_EmptyFormat)
+        if (status != ginterpreter_status_EmptyFormat) {
+            stack_dtor(&context->calcOp_stack);
             return status;
+        }
 
         (*((void (*)(ginterpreter *, SPU_FLOAT_TYPE **))context->commandJumpTable[opcode][operandsCnt]))(context, Operands);
 
-        opcode = *context->bufCur;
-        ++context->bufCur;
+        if ((context->bufCur < context->Buffer + context->buflen)) {
+            opcode = *context->bufCur;
+            ++context->bufCur;
+        }
     }
+
+    stack_dtor(&context->calcOp_stack);
+
     return ginterpreter_status_OK;
 }

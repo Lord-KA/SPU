@@ -24,7 +24,7 @@ static const size_t GASSEMBLY_MAX_LINE_SIZE = 256;              /// The max len 
   
 static const size_t GASSEMBLY_MAX_LABLES = 1000;                /// The max number of goto lables                         //TODO make it dynamicly reallocating?
 
-static const size_t MAX_OPERANDS = 2;                           /// The max number of operands for opcodes (for opcodes function table)
+static const size_t MAX_OPERANDS = 3;                           /// The max number of operands for opcodes (for opcodes function table)
 
 static const size_t MAX_RAM_SIZE = 1 << 10;                     /// The gSPU RAM size
 

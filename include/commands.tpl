@@ -30,9 +30,10 @@
 
 #define ARG_1 **valList
 #define ARG_2 **(valList + 1)
+#define ARG_3 **(valList + 2)
 
 /**
- * WARNING: default max operands number is 2, you can change that in ./include/gconfig.h
+ * WARNING: default max operands number is 3, you can change that in ./include/gconfig.h
  *
  * #define ARG_n **(valList + n + 1) 
  */
@@ -243,6 +244,20 @@ COMMAND(sqrt, Sqrt, false, 1, ({
     ARG_1 = sqrt(tmp);
 }))
 
+COMMAND(dumpArgs, DumpArgs, true, 1, ({
+    PUSH(ARG_1);
+}))
+
+COMMAND(dumpArgs, DumpArgs, false, 2, ({
+    PUSH(ARG_1);
+    PUSH(ARG_2);
+}))
+
+COMMAND(dumpArgs, DumpArgs, false, 3, ({
+    PUSH(ARG_1);
+    PUSH(ARG_2);
+    PUSH(ARG_3);
+}))
 
 #undef PUSH
 #undef POP

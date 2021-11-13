@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDART 20)
 set(CMAKE_CXX_STANDART_REQUIRED ON)
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -std=c11 -msse4.2 -g" CACHE STRING "Comment" FORCE)  #TODO do smth about -msse4.2
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -std=c11 -msse4.2 -g -D FULL_DEBUG" CACHE STRING "Comment" FORCE)  #TODO do smth about -msse4.2
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -D NDEBUG" CACHE STRING "Comment" FORCE)
 set(CMAKE_CXX_FLAGS_SANITIZER "${CMAKE_CXX_FLAGS} -Wpedantic -Wall -Wextra -Wformat=2 -fsanitize=address,undefined -g" CACHE STRING "Comment" FORCE)
 set(CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS} -D NDEBUG -fprofile-instr-generate -fcoverage-mapping" CACHE STRING "Comment" FORCE)
@@ -23,7 +23,7 @@ FetchContent_Declare(
 FetchContent_Declare(
   gstack
   GIT_REPOSITORY https://github.com/Lord-KA/HopefullyUnkillableStack.git
-  GIT_TAG        release-1.0.2
+  GIT_TAG        release-1.0.3
 )
 
 FetchContent_GetProperties(googletest gstack)
