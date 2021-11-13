@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDART 20)
 set(CMAKE_CXX_STANDART_REQUIRED ON)
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -std=c11 -msse4.2 -g" CACHE STRING "Comment" FORCE)  #TODO do smth about -msse4.2
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -std=c11 -msse4.2 -g -D FULL_DEBUG" CACHE STRING "Comment" FORCE)  #TODO do smth about -msse4.2
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -D NDEBUG" CACHE STRING "Comment" FORCE)
 set(CMAKE_CXX_FLAGS_SANITIZER "${CMAKE_CXX_FLAGS} -Wpedantic -Wall -Wextra -Wformat=2 -fsanitize=address,undefined -g" CACHE STRING "Comment" FORCE)
 set(CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS} -D NDEBUG -fprofile-instr-generate -fcoverage-mapping" CACHE STRING "Comment" FORCE)
@@ -49,16 +49,16 @@ include_directories(./include/)
 add_executable(interpreter src/main-interpreter.cpp src/ginterpreter.cpp)
 add_executable(assembler   src/main-assembler.cpp   src/gassembly.cpp)
 
-# add_executable(testing     tests/)       #TODO
+add_executable(testing     tests/test.cpp src/gassembly.cpp src/ginterpreter.cpp)       #TODO
 
 
 target_link_libraries(
-    #testing
+    testing
     gtest_main
 )
 
 include(GoogleTest)
-#gtest_discover_tests(testing)
+gtest_discover_tests(testing)
 
 message("                                                                                                                                            ")
 message("                                                                                                                                            ")

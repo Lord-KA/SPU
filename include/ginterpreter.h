@@ -45,11 +45,15 @@ typedef void (*OpcodeFunctionPtr)(ginterpreter *, SPU_FLOAT_TYPE **);       /// 
 
 struct ginterpreter {
     stack Stack;                    /// stack for hoarding values in runtime
-    OpcodeFunctionPtr commandJumpTable[gCnt][MAX_OPERANDS + 1] = {};    /// opcodes' function table
+    OpcodeFunctionPtr commandJumpTable[gCnt][GASSEMBLY_MAX_OPERANDS + 1] = {};    /// opcodes' function table
    
-    SPU_FLOAT_TYPE Registers[MAX_REGISTERS + 1] = {};                   /// array of registers
+    SPU_FLOAT_TYPE Registers[GASSEMBLY_MAX_REGISTERS + 1] = {};                   /// array of registers
 
     SPU_FLOAT_TYPE *RAM;                    /// memory accessible to an assembly programmer
+
+    size_t videoHeight = -1;                /// height of pseudographics window
+    size_t videoWidth  = -1;                /// width  of pseudographics window
+    char  *videoRAM;                        /// video memory accessible to an assembly programmer, could be outputed as pseudographics window
 
     char *Buffer = NULL;                    /// buffer with bytecode
     char *bufCur = NULL;                    /// cursor to location in buffer that is now executed
@@ -58,6 +62,10 @@ struct ginterpreter {
     SPU_FLOAT_TYPE calcOp_ret = 0;          /// service var to hold value in when calculating literal operands
 
     int cmpReg = 0;                         /// service register for setting comp results in ( <0 when `a < b`, >0 when `a > b` and ==0 when `a == b` )
+
+    FILE *outStream = NULL;                 /// filestream to write with opcodes
+
+    bool exited = false;
 
     // ginterpreter_status status = ginterpreter_status_OK;  //TODO add error codes stack and dump it when necessary
 } typedef ginterpreter;
@@ -69,7 +77,7 @@ struct ginterpreter {
  * @param interpreter pointer to mem for structure construction
  * @return interpreter status code
  */
-ginterpreter_status ginterpreter_ctor(ginterpreter *interpreter);
+ginterpreter_status ginterpreter_ctor(ginterpreter *interpreter, FILE *out);
 
 
 /**
@@ -95,6 +103,16 @@ ginterpreter_status ginterpreter_runFromFile(ginterpreter *interpreter, FILE *in
  * @return interpreter status code
  */
 ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *interpreter);
+
+
+/**
+ * @brief sets pseudographics window to provided parameters, new window is clean (filled with '\0')
+ * @param interpreter pointer to interpreter struct
+ * @param height the desired height
+ * @param width  the desired width
+ * @return interpreter status code
+ */
+ginterpreter_status ginterpreter_setPseudographicsWindow(ginterpreter *interpreter, size_t height, size_t width);
 
 
 /**

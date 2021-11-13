@@ -68,7 +68,7 @@ static bool isRegister(const char *buffer)
     while (isspace(*iter)) 
         ++iter;
     if (iter - buffer < strlen(buffer) + 1
-            && (*iter >= 'a' && *iter - 'a' < MAX_REGISTERS)
+            && (*iter >= 'a' && *iter - 'a' < GASSEMBLY_MAX_REGISTERS)
             && (*(iter + 1) == 'x'))
             return true;
     return false;
@@ -551,7 +551,7 @@ static gassembly_status gassembly_getOperand(FILE *in, FILE *out)
         if (regCode == EOF)
             return gassembly_status_ErrFile;
         
-        if (regCode < 1 || regCode >= MAX_REGISTERS)
+        if (regCode < 1 || regCode >= GASSEMBLY_MAX_REGISTERS)
             return gassembly_status_ErrReg;
 
         fprintf(out, "%cx", regCode + 'a' - 1);
