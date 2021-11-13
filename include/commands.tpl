@@ -265,6 +265,7 @@ COMMAND(dumpArgs, DumpArgs, false, 3, ({
     PUSH(ARG_1);
     PUSH(ARG_2);
     PUSH(ARG_3);
+}))
 
 COMMAND(vflush, Vflush, true, 0, ({
     assert(VIDEO_WIDTH != -1 && VIDEO_HEIGHT != -1);

@@ -1,9 +1,9 @@
 main:
-    vset 0, 1, 4
-    vset 0, 2, 5
-    vset 0, 3, 6
-    vset 0, 4, 7
-    vset 0, 5, 8
+    vset 1, 0, 97
+    vset 2, 0, 98
+    vset 3, 0, 99
+    vset 4, 0, 100
+    vset 5, 0, 101
     vflush
 
     ret

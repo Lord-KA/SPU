@@ -35,9 +35,6 @@ ginterpreter_status ginterpreter_dtor(ginterpreter *context)
 
     stack_dtor(&context->Stack);
 
-    for (size_t i = 0; i < context->videoHeight * context->videoWidth; ++i)
-        fprintf(stdout, "%d", context->videoRAM[i]);
-    fputc('\n', stdout);
     free(context->videoRAM);
     free(context->RAM);
     free(context->Buffer);
