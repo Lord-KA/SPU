@@ -49,16 +49,16 @@ include_directories(./include/)
 add_executable(interpreter src/main-interpreter.cpp src/ginterpreter.cpp)
 add_executable(assembler   src/main-assembler.cpp   src/gassembly.cpp)
 
-# add_executable(testing     tests/)       #TODO
+add_executable(testing     tests/test.cpp src/gassembly.cpp src/ginterpreter.cpp)       #TODO
 
 
 target_link_libraries(
-    #testing
+    testing
     gtest_main
 )
 
 include(GoogleTest)
-#gtest_discover_tests(testing)
+gtest_discover_tests(testing)
 
 message("                                                                                                                                            ")
 message("                                                                                                                                            ")

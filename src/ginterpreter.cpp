@@ -1,10 +1,21 @@
 #include "ginterpreter.h"
 
-ginterpreter_status ginterpreter_ctor(ginterpreter *context)
+ginterpreter_status ginterpreter_ctor(ginterpreter *context, FILE *out)
 {
+    if (ptrValid(out))
+        context->outStream = out;
+    else
+        context->outStream = stdout;
+
     stack_ctor(&context->Stack);
 
-    context->RAM = (SPU_FLOAT_TYPE*)calloc(MAX_RAM_SIZE, sizeof(SPU_FLOAT_TYPE));
+    context->videoHeight = GASSEMBLY_DEFAULT_WINDOW_HEIGHT;
+    context->videoWidth  = GASSEMBLY_DEFAULT_WINDOW_WIDTH;
+
+    context->videoRAM = (char*)calloc(context->videoWidth * context->videoHeight, sizeof(char));
+
+    context->RAM = (SPU_FLOAT_TYPE*)calloc(GASSEMBLY_MAX_RAM_SIZE, sizeof(SPU_FLOAT_TYPE));
+
     if (context->RAM == NULL) {
         fprintf(stderr, "ERROR: Failed to allocate RAM memory!\n");
         return ginterpreter_status_AllocErr;
@@ -13,13 +24,21 @@ ginterpreter_status ginterpreter_ctor(ginterpreter *context)
     #define COMMAND(name, Name, isFirst, argc, code) context->commandJumpTable[g##Name][argc] = (OpcodeFunctionPtr)&ginterpreter_##name##_##argc;
     #include "commands.tpl"
     #undef COMMAND
+
+    context->exited = false;
+
     return ginterpreter_status_OK;
 }
 
 ginterpreter_status ginterpreter_dtor(ginterpreter *context)
 {
+
     stack_dtor(&context->Stack);
 
+    for (size_t i = 0; i < context->videoHeight * context->videoWidth; ++i)
+        fprintf(stdout, "%d", context->videoRAM[i]);
+    fputc('\n', stdout);
+    free(context->videoRAM);
     free(context->RAM);
     free(context->Buffer);
     return ginterpreter_status_OK;
@@ -64,7 +83,7 @@ ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TY
         regCode = *context->bufCur;
         ++context->bufCur;
         
-        if (regCode < 1 || regCode >= MAX_REGISTERS) 
+        if (regCode < 1 || regCode >= GASSEMBLY_MAX_REGISTERS) 
             return ginterpreter_status_BadReg;
 
         *valuePtr = context->Registers + regCode;
@@ -90,18 +109,13 @@ ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TY
         }
         
         stack_push(&context->calcOp_stack, result);
-        // context->calcOp_ret = result;
         stack_top(&context->calcOp_stack, valuePtr);
-        // *valuePtr = &context->calcOp_ret;
     } else {
         fprintf(stderr, "Literal!\n");
 
         stack_push(&context->calcOp_stack, *(SPU_FLOAT_TYPE*)(context->bufCur));
-        // context->calcOp_ret = result;
-        // context->calcOp_ret = *(SPU_FLOAT_TYPE*);
         context->bufCur += sizeof(SPU_FLOAT_TYPE);
         stack_top(&context->calcOp_stack, valuePtr);
-        // *valuePtr = &context->calcOp_ret;
         fprintf(stderr, "ret_val = %lli\n", **valuePtr);
     }
     return ginterpreter_status_OK;
@@ -131,15 +145,16 @@ ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *context)
 
     context->bufCur = context->Buffer;
 
-    opcode = *context->bufCur;
-    ++context->bufCur;
     stack_ctor(&context->calcOp_stack);
+  
+    while (context->bufCur < context->Buffer + context->buflen && !context->exited) {
+        opcode = *context->bufCur;
+        ++context->bufCur;
 
-    while (context->bufCur < context->Buffer + context->buflen) {
         fprintf(stderr, "opcode = %d (%s)\n", opcode, gDisassambleTable[opcode]);
         size_t operandsCnt = 0;
         
-        SPU_FLOAT_TYPE *Operands[MAX_OPERANDS + 1] = {};
+        SPU_FLOAT_TYPE *Operands[GASSEMBLY_MAX_OPERANDS + 1] = {};
         ginterpreter_status status = ginterpreter_status_OK;
         while ((status = ginterpreter_calcOperand(context, &Operands[operandsCnt])) == ginterpreter_status_OK) {
             if (Operands[operandsCnt] == NULL) {
@@ -157,14 +172,25 @@ ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *context)
         }
 
         (*((void (*)(ginterpreter *, SPU_FLOAT_TYPE **))context->commandJumpTable[opcode][operandsCnt]))(context, Operands);
-
-        if ((context->bufCur < context->Buffer + context->buflen)) {
-            opcode = *context->bufCur;
-            ++context->bufCur;
-        }
     }
-
     stack_dtor(&context->calcOp_stack);
+    return ginterpreter_status_OK;
+}
+
+ginterpreter_status ginterpreter_setPseudographicsWindow(ginterpreter *context, size_t height, size_t width) 
+{
+    context->videoHeight = height;
+    context->videoWidth  = width;
+
+    free(context->videoRAM);
+
+    context->videoRAM = (char*)calloc(context->videoWidth * context->videoHeight, sizeof(char));
+
+    if (context->videoRAM == NULL) {
+        context->videoHeight = -1;
+        context->videoWidth  = -1;
+        return ginterpreter_status_AllocErr;
+    }
 
     return ginterpreter_status_OK;
 }

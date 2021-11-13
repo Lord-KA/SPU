@@ -22,20 +22,27 @@
 #define PUSH(val)   stack_push(&context->Stack, (val))
 #define GET_POS()     (context->bufCur - context->Buffer)
 #define SET_POS(pos)  (context->bufCur = context->Buffer + pos)
+#define OUT (context->outStream)
+#define EXIT() (context->exited = true)
+#define VIDEO_RAM(y, x) (context->videoRAM[(y) * context->videoWidth + (x)])
+#define VIDEO_HEIGHT (context->videoHeight)
+#define VIDEO_WIDTH  (context->videoWidth)
 #define CMP_REG (context->cmpReg)
 
 /**
  * GET/SET_POS are used to get/set position in interpreted bytecode (like in jmp opcode)
  */
 
-#define ARG_1 **valList
-#define ARG_2 **(valList + 1)
-#define ARG_3 **(valList + 2)
+
+#define ARG_1 (**valList)
+#define ARG_2 (**(valList + 1))
+#define ARG_3 (**(valList + 2))
+
 
 /**
  * WARNING: default max operands number is 3, you can change that in ./include/gconfig.h
  *
- * #define ARG_n **(valList + n + 1) 
+ * #define ARG_n (**(valList + n - 1))
  */
 
 COMMAND(idle, Idle, true, 0, ({
@@ -122,11 +129,11 @@ COMMAND(mov, Mov, true, 2, ({
 COMMAND(out, Out, true, 0, ({
     SPU_FLOAT_TYPE val;
     POP(&val);
-    printf("%d\n", val);
+    fprintf(OUT, "%d\n", val);
 }))
 
 COMMAND(out, Out, false, 1, ({
-    printf("%d\n", ARG_1);
+    fprintf(OUT, "%d\n", ARG_1);
 }))
 
 COMMAND(jmp, Jmp, true, 1, ({
@@ -148,7 +155,7 @@ COMMAND(ret, Ret, true, 0, ({
 }))
 
 COMMAND(exit, Exit, true, 0, ({
-    exit(0);
+    EXIT();
 }))
 
 COMMAND(cmp, Cmp, true, 0, ({
@@ -244,6 +251,7 @@ COMMAND(sqrt, Sqrt, false, 1, ({
     ARG_1 = sqrt(tmp);
 }))
 
+
 COMMAND(dumpArgs, DumpArgs, true, 1, ({
     PUSH(ARG_1);
 }))
@@ -257,13 +265,35 @@ COMMAND(dumpArgs, DumpArgs, false, 3, ({
     PUSH(ARG_1);
     PUSH(ARG_2);
     PUSH(ARG_3);
+
+COMMAND(vflush, Vflush, true, 0, ({
+    assert(VIDEO_WIDTH != -1 && VIDEO_HEIGHT != -1);
+    for (size_t x = 0; x < VIDEO_WIDTH; ++x) {
+        for (size_t y = 0; y < VIDEO_HEIGHT; ++y) 
+            fputc(VIDEO_RAM(y, x), OUT);
+        fputc('\n', OUT);
+    }
+}))
+
+COMMAND(vset, Vset, true, 3, ({
+    VIDEO_RAM(ARG_1, ARG_2) = (char)ARG_3;
+}))
+
+COMMAND(stackDump, StackDump, true, 0, ({
+    stack_dump(&context->Stack);
+
 }))
 
 #undef PUSH
 #undef POP
+#undef OUT
+#undef EXIT
 #undef GET_POS
 #undef SET_POS
 #undef CMP_REG
+#undef VIDEO_RAM
+#undef VIDEO_HEIGHT
+#undef VIDEO_WIDTH
 #undef ARG_1
 #undef ARG_2
 #undef ARG_3

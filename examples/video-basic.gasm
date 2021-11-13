@@ -1,0 +1,9 @@
+main:
+    vset 0, 1, 4
+    vset 0, 2, 5
+    vset 0, 3, 6
+    vset 0, 4, 7
+    vset 0, 5, 8
+    vflush
+
+    ret

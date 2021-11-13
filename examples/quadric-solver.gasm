@@ -11,6 +11,7 @@ qsolver:            ;   input via ax, bx, cx;   output with dx and ex, they eq [
     cmp [DET], 0x0
     out [DET]
     sqrt [DET]
+    stackDump           ;TODO
     jeq quadric_zero
     jl no_solutions
     div [DET], 2
@@ -67,6 +68,7 @@ main:
     NAN:
     mov [NAN], 0xfafafafafa
 
+    stackDump           ;TODO
     mov ax, 0
     mov bx, 13
     mov cx, 0-169
@@ -74,5 +76,6 @@ main:
     out dx
     out ex
 
+    stackDump           ;TODO
     ret
 

@@ -18,15 +18,17 @@ typedef SPU_FLOAT_TYPE STACK_TYPE;
 
 static const char LOG_DELIM[] = "========================";
 
-static const size_t MAX_REGISTERS = 16;                         /// The number of general-use registers
+static const size_t GASSEMBLY_MAX_REGISTERS = 16;                         /// The number of general-use registers
 
 static const size_t GASSEMBLY_MAX_LINE_SIZE = 256;              /// The max len of source code line that would be read
   
 static const size_t GASSEMBLY_MAX_LABLES = 1000;                /// The max number of goto lables                         //TODO make it dynamicly reallocating?
 
-static const size_t MAX_OPERANDS = 3;                           /// The max number of operands for opcodes (for opcodes function table)
+static const size_t GASSEMBLY_MAX_OPERANDS = 3;                           /// The max number of operands for opcodes (for opcodes function table)
 
-static const size_t MAX_RAM_SIZE = 1 << 10;                     /// The gSPU RAM size
+static const size_t GASSEMBLY_MAX_RAM_SIZE = 1 << 10;                     /// The gSPU RAM size
 
+static const size_t GASSEMBLY_DEFAULT_WINDOW_HEIGHT = 80;
+static const size_t GASSEMBLY_DEFAULT_WINDOW_WIDTH  = 120;
 
 #endif
