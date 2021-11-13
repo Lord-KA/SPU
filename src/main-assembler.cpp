@@ -47,12 +47,12 @@ int main(int argc, char **argv) {
     // fprintf(stderr, "mode = %d\n", mode);
     gassembly_status status = gassembly_status_OK;
     if (mode == gAssemble) {
-        status = gassembly_assembleFromFile(in, out);
+        status = gassembly_assembleFromFile(in, out, stderr);
         if (status != gassembly_status_OK)
             fprintf(stderr, "Error during assembling, error_code = %d (%s)\n", status, gassembly_statusMsg[status]);
     }
     else if (mode == gDisassamble) {
-        status = gassembly_disassembleFromFile(in, out);
+        status = gassembly_disassembleFromFile(in, out, stderr);
         if (status != gassembly_status_OK)
             fprintf(stderr, "Error during disassembling, error_code = %d (%s)\n", status, gassembly_statusMsg[status]);
     }

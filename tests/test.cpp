@@ -17,7 +17,7 @@ TEST(manual, putOperand)
     FILE *program_in  = fmemopen(program_1, sizeof(char), "r");
     gassembly_status status = gassembly_status_OK;
 
-    status = gassembly_assembleFromFile(program_in, bin_out);
+    status = gassembly_assembleFromFile(program_in, bin_out, stderr);
     if (status != gassembly_status_OK)
         fprintf(stderr, "error_code = %d (%s)\n", status, gassembly_statusMsg[status]);
 
@@ -29,7 +29,7 @@ TEST(manual, putOperand)
 
     ginterpreter inter;
     ginterpreter_status status_2;
-    status_2 = ginterpreter_ctor(&inter, program_out);
+    status_2 = ginterpreter_ctor(&inter, program_out, NULL);
     if (status_2 != gassembly_status_OK)
         fprintf(stderr, "error_code = %d (%s)\n", status_2, ginterpreter_statusMsg[status_2]);
 

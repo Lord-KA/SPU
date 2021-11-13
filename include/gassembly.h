@@ -32,6 +32,9 @@ enum gassembly_status {
     gassembly_status_ErrFixups,
     gassembly_status_ErrOpcode,
     gassembly_status_BadFormat,
+    gassembly_status_BadInPtr,
+    gassembly_status_BadOutPtr,
+    gassembly_status_BadOperandPtr,
     gassembly_status_Cnt
 };
 
@@ -50,7 +53,16 @@ static const char gassembly_statusMsg[gassembly_status_Cnt][GASSEMBLY_MAX_LINE_S
         "Error in fixup table",
         "Error in opcode parsing",
         "Error in format parsing (bad format provided?)",
+        "Error: bad in-stream provided",
+        "Error: bad out-stream provided",
+        "Error: bad operand ptr provided",
     };
+
+#ifndef NLOGS
+#define GASSEMBLY_ASSERT_LOG(expr, errCode) ASSERT_LOG((expr), (errCode), gassembly_statusMsg[(errCode)], logStream)
+#else
+#define GASSEMBLY_ASSERT_LOG(expr, errCode)
+#endif
 
 /* 
  * WARNING: all functions below use null-terminated c-style string without any additional validation.
@@ -68,7 +80,7 @@ static const char gassembly_statusMsg[gassembly_status_Cnt][GASSEMBLY_MAX_LINE_S
  * @param offset integer that states offset from file begining that is subtracted from curent file position (for future features)
  * @return assembly status code
  */
-gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun, const long offset);
+gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun, const long offset, FILE *logStream);
 
 
 /**
@@ -77,7 +89,7 @@ gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const
  * @param out filestream to assemble to
  * @return assembly status code
  */
-gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out);
+gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out, FILE *logStream);
 
 
 /**
@@ -130,7 +142,7 @@ static bool gassembly_getLable(const char *buffer, char **beg, char **end);
  * @param fixupRun flag that states is it a fixups calculation run (when output is discarded)
  * @return assembly status code
  */
-static gassembly_status gassembly_putOperand(const char *operand, FILE *out, const bool fixupRun);
+static gassembly_status gassembly_putOperand(const char *operand, FILE *out, const bool fixupRun, FILE *logStream);
 
 
 /**
@@ -140,7 +152,7 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
  * @param offset integer that states offset from file begining that is subtracted from curent file position (for future features)
  * @return assembly status code
  */
-static gassembly_status gassembly_putOpening(FILE *out, const bool fixupRun, const size_t offset);
+static gassembly_status gassembly_putOpening(FILE *out, const bool fixupRun, const size_t offset, FILE *logStream);
 
 
 /**
@@ -157,7 +169,7 @@ static int gOpcodeByKeyword(char *keyword);
  * @param out filestream to assemble to
  * @return assembly status code
  */
-gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out);
+gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out, FILE *logStream);
 
 
 /**
@@ -166,6 +178,6 @@ gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out);
  * @param out filestream to assemble to
  * @return assembly status code
  */
-static gassembly_status gassembly_getOperand(FILE *in, FILE *out);
+static gassembly_status gassembly_getOperand(FILE *in, FILE *out, FILE *logStream);
 
 #endif

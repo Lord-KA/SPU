@@ -5,6 +5,7 @@
 #include "gopcodes.h"
 
 #include "gstack.h"
+#include "gutils.h"
 
 #include <stdio.h>
 #include <malloc.h>
@@ -23,12 +24,13 @@ enum ginterpreter_status {
     ginterpreter_status_FileErr,
     ginterpreter_status_BadOperand,
     ginterpreter_status_AllocErr,
+    ginterpreter_status_BadSelfPtr,
     ginterpreter_status_Cnt,
 } typedef ginterpreter_status;
 
 static const char ginterpreter_statusMsg[ginterpreter_status_Cnt][GASSEMBLY_MAX_LINE_SIZE] = {
         "OK",
-        "Empty",
+        "Empty format",
         "Error in memory call interpretation",
         "Error in calculation interpretation",
         "Error in register interpretation",
@@ -37,8 +39,20 @@ static const char ginterpreter_statusMsg[ginterpreter_status_Cnt][GASSEMBLY_MAX_
         "Error in file IO",
         "Error in operands interpretation",
         "Error in memory allocation",
+        "Error: bad context ptr provided",
     };
 
+#ifndef NLOGS
+#define GINTERPRETER_ASSERT_LOG(expr, errCode) ASSERT_LOG((expr), (errCode), ginterpreter_statusMsg[(errCode)], context->logStream)
+#else
+#define GINTERPRETER_ASSERT_LOG(expr, errCode)
+#endif
+
+#ifndef NLOGS
+#define SELF_PTR_CHECK(this_) ASSERT_LOG(gPtrValid(this_), ginterpreter_status_BadSelfPtr, ginterpreter_statusMsg[ginterpreter_status_BadSelfPtr], stderr)
+#else
+#define SELF_PTR_CHECK(this_)
+#endif
 
 typedef void (*OpcodeFunctionPtr)(ginterpreter *, SPU_FLOAT_TYPE **);       /// template pointer to a function with opcode's logic
 
@@ -65,6 +79,7 @@ struct ginterpreter {
     int cmpReg = 0;                         /// service register for setting comp results in ( <0 when `a < b`, >0 when `a > b` and ==0 when `a == b` )
 
     FILE *outStream = NULL;                 /// filestream to write with opcodes
+    FILE *logStream = NULL;                 /// filestream to write with opcodes
 
     bool exited = false;
 
@@ -78,7 +93,7 @@ struct ginterpreter {
  * @param interpreter pointer to mem for structure construction
  * @return interpreter status code
  */
-ginterpreter_status ginterpreter_ctor(ginterpreter *interpreter, FILE *out);
+ginterpreter_status ginterpreter_ctor(ginterpreter *interpreter, FILE *outStream, FILE *logStream);
 
 
 /**

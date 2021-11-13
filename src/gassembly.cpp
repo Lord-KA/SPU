@@ -10,6 +10,7 @@
 
 static char *findFirstExternalOp(const char *buffer, const char operation)
 {
+    assert(gPtrValid(buffer));
     char *opPos = (char*)buffer;  
     size_t bufferLen = strlen(buffer);
     size_t memBracketBalance  = 0;
@@ -35,6 +36,7 @@ static char *findFirstExternalOp(const char *buffer, const char operation)
 
 static bool isMemCall(const char *buffer) 
 {
+    assert(gPtrValid(buffer));
     /*
      * WARNING buffer must be a null-terminated string
      */
@@ -64,6 +66,7 @@ static bool isMemCall(const char *buffer)
 
 static bool isRegister(const char *buffer) 
 {
+    assert(gPtrValid(buffer));
     char *iter = (char*)buffer;
     while (isspace(*iter)) 
         ++iter;
@@ -76,6 +79,7 @@ static bool isRegister(const char *buffer)
 
 static bool isLable(const char *buffer) 
 {
+    assert(gPtrValid(buffer));
     if (isRegister(buffer))
         return false;
 
@@ -95,8 +99,14 @@ static bool isLable(const char *buffer)
     return true;
 }
 
-static gassembly_status gassembly_putOperand(const char *operand, FILE *out, const bool fixupRun) 
+static gassembly_status gassembly_putOperand(const char *operand, FILE *out, const bool fixupRun, FILE *newLogStream) 
 {
+    FILE *logStream = stderr;
+    if (gPtrValid(newLogStream))
+        logStream = newLogStream;
+
+    GASSEMBLY_ASSERT_LOG(gPtrValid(operand), gassembly_status_BadOperandPtr);
+    GASSEMBLY_ASSERT_LOG(gPtrValid(out), gassembly_status_BadOutPtr);
     /*
      * WARNING: `operand` should be a null-terminated string
      */
@@ -135,71 +145,58 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
         format.isMemCall  = 0;
         format.isRegister = 0;
         format.calculation = gCalc_none;
-        if (fwrite(&format, sizeof(format), 1, out) != 1)
-            return gassembly_status_ErrFile;
+        GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
 
         SPU_INTEG_TYPE val = 0;          
-        if (sscanf(operand, "%lli%n", &val, &isOk) != 1)
-            return gassembly_status_ErrLit;
+        GASSEMBLY_ASSERT_LOG(sscanf(operand, "%lli%n", &val, &isOk) == 1, gassembly_status_ErrLit);
 
-        if (fwrite(&val, sizeof(SPU_INTEG_TYPE), 1, out) != 1)
-            return gassembly_status_ErrFile;
+        GASSEMBLY_ASSERT_LOG(fwrite(&val, sizeof(SPU_INTEG_TYPE), 1, out) == 1, gassembly_status_ErrFile);
 
     } else if (isDouble(operand)) {
         /* Literal double case */
         format.isMemCall  = 0;
         format.isRegister = 0;
         format.calculation = gCalc_none;
-        if (fwrite(&format, sizeof(format), 1, out) != 1)
-            return gassembly_status_ErrFile;
+        GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
 
         SPU_FLOAT_TYPE val = 0;          
-        if (sscanf(operand, "%lg%n", &val, &isOk) != 1)
-            return gassembly_status_ErrLit;
+        GASSEMBLY_ASSERT_LOG(sscanf(operand, "%lg%n", &val, &isOk) == 1, gassembly_status_ErrLit);
 
-        if (fwrite(&val, sizeof(SPU_FLOAT_TYPE), 1, out) != 1)
-            return gassembly_status_ErrFile;
+        GASSEMBLY_ASSERT_LOG(fwrite(&val, sizeof(SPU_INTEG_TYPE), 1, out) == 1, gassembly_status_ErrFile);
     } else if (isRegister(operand)) {
         /* Register case */
         format.isMemCall  = 0;
         format.isRegister = 1;
         format.calculation = gCalc_none;
-        if (fwrite(&format, sizeof(format), 1, out) != 1)
-            return gassembly_status_ErrFile;
+        GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
 
         char reg = 0;
-        if (sscanf(operand, "%cx%n", &reg, &isOk) != 1)
-            return gassembly_status_ErrReg;
+        GASSEMBLY_ASSERT_LOG(sscanf(operand, "%cx%n", &reg, &isOk) == 1, gassembly_status_ErrReg);
 
         char regCode = reg - 'a' + 1;
         assert(regCode > 0);
 
-        if (fputc(regCode, out) == EOF)
-            return gassembly_status_ErrFile;
+        GASSEMBLY_ASSERT_LOG(fputc(regCode, out) != EOF, gassembly_status_ErrFile);
 
     } else if (isLable(operand)) {
         /* Lable case */
-        fprintf(stderr, "Lable case!\n");
         format.isMemCall  = 0;
         format.isRegister = 0;
         format.calculation = gCalc_none;
-        if (fwrite(&format, sizeof(format), 1, out) != 1)  
-            return gassembly_status_ErrFile;
+        GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
 
         char lable[GASSEMBLY_MAX_LINE_SIZE] = {};
 
-        if (sscanf(operand, "%s", lable) != 1)
-            return gassembly_status_ErrLable;
+        GASSEMBLY_ASSERT_LOG(sscanf(operand, "%s", lable) == 1, gassembly_status_ErrLable);
+
         size_t i = 0;
         if (!fixupRun) {
     
             while (i < GASSEMBLY_MAX_LABLES && strcmp(gassembly_Lables[i], lable) != 0)
                 ++i;
-            if (i == GASSEMBLY_MAX_LABLES)      
-                return gassembly_status_ErrLable;
+            GASSEMBLY_ASSERT_LOG(i != GASSEMBLY_MAX_LABLES, gassembly_status_ErrLable);      
         }
-        if (fwrite(&gassembly_Fixups[i], sizeof(SPU_INTEG_TYPE), 1, out) != 1)
-            return gassembly_status_ErrFile;
+        GASSEMBLY_ASSERT_LOG(fwrite(&gassembly_Fixups[i], sizeof(SPU_INTEG_TYPE), 1, out) == 1, gassembly_status_ErrFile);
 
     } else if (isMemCall(operand)) {
         /* Mem call case */
@@ -213,10 +210,9 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
         format.isMemCall  = 1;
         format.isRegister = 0;
         format.calculation = gCalc_none;
-        if (fwrite(&format, sizeof(format), 1, out) != 1)
-            return gassembly_status_ErrFile;
+        GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
         
-        gassembly_putOperand(subOperand, out, fixupRun);
+        gassembly_putOperand(subOperand, out, fixupRun, logStream);
     } 
     else if (*operand == '(' && *(operand + operandLen - 1) == ')' ) {
         /* Brackets calculation case */      
@@ -224,7 +220,7 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
         char subOperand[GASSEMBLY_MAX_LINE_SIZE] = {};
         strncpy(subOperand, operand + 1, operandLen - 2);
 
-        gassembly_putOperand(subOperand, out, fixupRun);
+        gassembly_putOperand(subOperand, out, fixupRun, logStream);
     } else {
         /* Resolving calculations case */
         char *addPos = findFirstExternalOp(operand, '+');
@@ -236,8 +232,7 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
             format.isMemCall  = 0;
             format.isRegister = 0;
             format.calculation = gCalc_mul;
-            if (fwrite(&format, sizeof(format), 1, out) != 1)
-                return gassembly_status_ErrFile;
+            GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
 
             calcOp = '*';
             opPos = findFirstExternalOp(operand, '*');
@@ -246,8 +241,7 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
             format.isMemCall  = 0;
             format.isRegister = 0;
             format.calculation = gCalc_add;
-            if (fwrite(&format, sizeof(format), 1, out) != 1)
-                return gassembly_status_ErrFile;
+            GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
             
             opPos = addPos;
             calcOp = '+';
@@ -256,15 +250,14 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
             format.isMemCall  = 0;
             format.isRegister = 0;
             format.calculation = gCalc_sub;
-            if (fwrite(&format, sizeof(format), 1, out) != 1)
-                return gassembly_status_ErrFile;
+            GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
             
             opPos = subPos;
             calcOp = '-';
         }
 
         if (opPos == NULL) {
-            fprintf(stderr, "ERROR: parsing error, no `+` or `-` or `*` in a calculation\n");
+            fprintf(logStream, "ERROR: parsing error, no `+` or `-` or `*` in a calculation\n");
             return gassembly_status_ErrCalc;
         }
         assert(opPos > operand);
@@ -276,8 +269,8 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
         ++opPos;
         strncpy(subOperand_2, opPos,  operandLen - (opPos - operand));
 
-        int status_1 = gassembly_putOperand(subOperand_1, out, fixupRun);
-        int status_2 = gassembly_putOperand(subOperand_2, out, fixupRun);
+        int status_1 = gassembly_putOperand(subOperand_1, out, fixupRun, logStream);
+        int status_2 = gassembly_putOperand(subOperand_2, out, fixupRun, logStream);
         if (status_1 != 0 || status_2 != 0)
             return gassembly_status_ErrCalc;
     }
@@ -285,27 +278,40 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
     return gassembly_status_OK;
 }
 
-static gassembly_status gassembly_putOpening(FILE *out, const bool fixupRun, const size_t offset)
-{
+static gassembly_status gassembly_putOpening(FILE *out, const bool fixupRun, const size_t offset, FILE *newLogStream)
+{    
+    FILE *logStream = stderr;
+    if (gPtrValid(newLogStream))
+        logStream = newLogStream;
+
+    GASSEMBLY_ASSERT_LOG(gPtrValid(out), gassembly_status_BadOutPtr);
+ 
     char buffer_1[GASSEMBLY_MAX_LINE_SIZE] = "call main";
-    gassembly_status status = gassembly_assembleFromLine("call main", out, fixupRun, offset);
+    gassembly_status status = gassembly_assembleFromLine("call main", out, fixupRun, offset, logStream);
     if (status > 1) {
-        fprintf(stderr, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], "call main   ; This is an automaticly added opening line");
+        fprintf(logStream, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], "call main   ; This is an automaticly added opening line");
         return status;
     }
     
     char buffer_2[GASSEMBLY_MAX_LINE_SIZE] = "exit";
-    status = gassembly_assembleFromLine("exit", out, fixupRun, offset);
+    status = gassembly_assembleFromLine("exit", out, fixupRun, offset, logStream);
     if (status > 1) {
-        fprintf(stderr, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], "exit   ; This is an automaticly added opening line"); 
+        fprintf(logStream, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], "exit   ; This is an automaticly added opening line"); 
         return status;
     }
 
     return gassembly_status_OK;
 }
 
-gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out) 
-{
+gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out, FILE *newLogStream) 
+{  
+    FILE *logStream = stderr;
+    if (gPtrValid(newLogStream))
+        logStream = newLogStream;
+
+    GASSEMBLY_ASSERT_LOG(gPtrValid(in),  gassembly_status_BadInPtr);
+    GASSEMBLY_ASSERT_LOG(gPtrValid(out), gassembly_status_BadOutPtr);
+ 
     char buffer[GASSEMBLY_MAX_LINE_SIZE] = {};
     
     gassembly_status status; 
@@ -315,22 +321,22 @@ gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out)
     bool fixupRun = true;
 
     size_t line = 1;
-    if (!getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in))
-        return gassembly_status_ErrFile;
+    GASSEMBLY_ASSERT_LOG(getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in), gassembly_status_ErrFile);
 
-    fprintf(stderr, "line = #%s#\n", buffer);
-    status = gassembly_putOpening(devNull, fixupRun, offset);
+    #ifdef EXTRA_VERBOSE
+    fprintf(logStream, "line = #%s#\n", buffer);
+    #endif
+    status = gassembly_putOpening(devNull, fixupRun, offset, logStream);
     if (status != gassembly_status_OK)
         return status;
 
     while (!feof(in)) {
-        status = gassembly_assembleFromLine(buffer, devNull, fixupRun, offset);
+        status = gassembly_assembleFromLine(buffer, devNull, fixupRun, offset, logStream);
         if (status > 1) {
-            fprintf(stderr, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], buffer);      //TODO
+            fprintf(logStream, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], buffer);
             return status;
         }
-        if (!getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in))
-            return gassembly_status_ErrFile;
+        GASSEMBLY_ASSERT_LOG(getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in), gassembly_status_ErrFile);
         ++line;
     }
     fclose(devNull);
@@ -338,34 +344,32 @@ gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out)
     line = 1;
     fixupRun = false;
     fseek(in, startPos, SEEK_SET);
-    if (!getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in))
-        return gassembly_status_ErrFile;
+    GASSEMBLY_ASSERT_LOG(getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in), gassembly_status_ErrFile);
         
-    status = gassembly_putOpening(out, fixupRun, offset);
+    status = gassembly_putOpening(out, fixupRun, offset, logStream);
     if (status != gassembly_status_OK)
         return status;
 
     while (!feof(in)) {
-        status = gassembly_assembleFromLine(buffer, out, fixupRun, offset);
+        status = gassembly_assembleFromLine(buffer, out, fixupRun, offset, logStream);
         if (status > 1) {
-            fprintf(stderr, "Error occured during assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], buffer);      //TODO
+            fprintf(logStream, "Error occured during assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], buffer);
             return status;
         }
-        if (!getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in))
-            return gassembly_status_ErrFile;
+        GASSEMBLY_ASSERT_LOG(getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in), gassembly_status_ErrFile);
         ++line;
     }
 
-    size_t i = 0;       //TODO DEBUG
-    while (*gassembly_Lables[i] != '\0') {
-        fprintf(stderr, "Lable = #%s#, Fixup = %d\n", gassembly_Lables[i], (SPU_INTEG_TYPE)gassembly_Fixups[i]); //DEBUG TODO
-        ++i;
-    }
+    #ifdef EXTRA_VERBOSE
+    for (size_t i = 0; *gassembly_Lables[i] != '\0'; ++i)
+        fprintf(logStream, "Lable = #%s#, Fixup = %d\n", gassembly_Lables[i], (SPU_INTEG_TYPE)gassembly_Fixups[i]); //DEBUG
+    #endif
     return gassembly_status_OK;
 }
 
 static int gOpcodeByKeyword(char *keyword)
-{              
+{
+    assert(gPtrValid(keyword));
     size_t i = 0;
     while (i < gCnt && strcmp(keyword, gDisassambleTable[i])) {
         ++i;
@@ -377,6 +381,7 @@ static int gOpcodeByKeyword(char *keyword)
 
 static bool gassembly_getLable(const char *buffer, char **beg, char **end)
 {
+    assert(gPtrValid(buffer));
     char *iter = (char*)buffer;
     while (isspace(*iter))
         ++iter;
@@ -403,17 +408,19 @@ static bool gassembly_getLable(const char *buffer, char **beg, char **end)
     return true;
 }
 
-gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun, const long offset) 
+gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun, const long offset, FILE *newLogStream) 
 {
+    FILE *logStream = stderr;
+    if (gPtrValid(newLogStream))
+        logStream = newLogStream;
+
+    GASSEMBLY_ASSERT_LOG(gPtrValid(buffer), gassembly_status_BadOpPtr);
+    GASSEMBLY_ASSERT_LOG(gPtrValid(out),    gassembly_status_BadOutPtr);
+ 
     /* 
      * WARNING: `buffer` must be a null terminated
      * string with len eq GASSEMBLY_MAX_LINE_SIZE 
      */
-
-    if (!gPtrValid(buffer))
-        return gassembly_status_BadOpPtr;
-    if (!gPtrValid(out))
-        return gassembly_status_ErrFile;
 
     gassembly_status status = gassembly_status_OK;
     
@@ -437,7 +444,7 @@ gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const
             while (i < GASSEMBLY_MAX_LABLES && *gassembly_Lables[i] != '\0')
                 ++i;
             if (i == GASSEMBLY_MAX_LABLES) {
-                fprintf(stderr, "ERROR: Fixup table is full!\n");
+                fprintf(logStream, "ERROR: Fixup table is full!\n");
                 return gassembly_status_ErrFixups;
             }
             strncpy(gassembly_Lables[i], lableBeg, lableEnd - lableBeg);
@@ -453,17 +460,17 @@ gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const
     char operand_1[GASSEMBLY_MAX_LINE_SIZE] = {};
     char operand_2[GASSEMBLY_MAX_LINE_SIZE] = {};
 
-    if (sscanf(buffer, "%s", keyword) != 1)
-        return gassembly_status_ErrFile;
+    GASSEMBLY_ASSERT_LOG(sscanf(buffer, "%s", keyword) == 1, gassembly_status_ErrFile);
 
     char opcode = (gOpcodeByKeyword(keyword));
-    fprintf(stderr, "opcode = %d (%s)\n", opcode, keyword);
+    #ifdef EXTRA_VERBOSE
+    fprintf(logStream, "opcode = %d (%s)\n", opcode, keyword);
+    #endif
     if (opcode == -1) {
-        fprintf(stderr, "Bad opcode provided\n");
+        fprintf(logStream, "Bad opcode provided\n");
         return gassembly_status_ErrOpcode;
     }
-    if (fputc(opcode, out) == EOF)        //TODO implement dictionary for opcodes
-        return gassembly_status_ErrFile;
+    GASSEMBLY_ASSERT_LOG(fputc(opcode, out) != EOF, gassembly_status_ErrFile);
     
     /* 
      * By now buffer shell not have opening spaces
@@ -487,7 +494,7 @@ gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const
         char operand[GASSEMBLY_MAX_LINE_SIZE] = {};
         assert(delim > operands);
         strncpy(operand, operands, delim - operands);
-        status = gassembly_putOperand(operand, out, fixupRun);             //TODO handle returned error codes
+        status = gassembly_putOperand(operand, out, fixupRun, logStream);             //TODO handle returned error codes
         if (status > 1)
             return status;
 
@@ -495,32 +502,36 @@ gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const
         delim = findFirstExternalOp(operands, ',');
     }
     strcpy(operand, operands);
-    status = gassembly_putOperand(operand, out, fixupRun);
+    status = gassembly_putOperand(operand, out, fixupRun, logStream);
     if (status > 1)
         return status;
 
 finish:
     operandFormat emptyFormat = {};
-    if (fwrite(&emptyFormat, sizeof(emptyFormat), 1, out) != 1)
-        return gassembly_status_ErrFile;
+    GASSEMBLY_ASSERT_LOG(fwrite(&emptyFormat, sizeof(emptyFormat), 1, out) == 1, gassembly_status_ErrFile);
     return gassembly_status_OK;
 }
 
-static gassembly_status gassembly_getOperand(FILE *in, FILE *out) 
+static gassembly_status gassembly_getOperand(FILE *in, FILE *out, FILE *newLogStream) 
 {
+    FILE *logStream = stderr;
+    if (gPtrValid(newLogStream))
+        logStream = newLogStream;
+
+    GASSEMBLY_ASSERT_LOG(gPtrValid(in),  gassembly_status_BadInPtr);
+    GASSEMBLY_ASSERT_LOG(gPtrValid(out), gassembly_status_BadOutPtr);
+ 
+ 
     gassembly_status status = gassembly_status_OK;
     operandFormat format;
     if (fread(&format, sizeof(format), 1, in) != 1) {
-        fprintf(stderr, "failed to read format!\n");
-        if (feof(in) || ferror(in))
-            return gassembly_status_ErrFile;
+        fprintf(logStream, "failed to read format!\n");
+        GASSEMBLY_ASSERT_LOG(!feof(in) && !ferror(in), gassembly_status_ErrFile);
         return gassembly_status_BadFormat;
     }
 
 
-    if (!operandFormat_formatVerify(format)) {
-        return gassembly_status_BadFormat;
-    }
+    GASSEMBLY_ASSERT_LOG(operandFormat_formatVerify(format), gassembly_status_BadFormat);
 
     if (operandFormat_isEmpty(format)) {
         return gassembly_status_Empty;
@@ -528,19 +539,19 @@ static gassembly_status gassembly_getOperand(FILE *in, FILE *out)
 
     if (format.isMemCall) {
         fprintf(out, "[");
-        status = gassembly_getOperand(in, out);
+        status = gassembly_getOperand(in, out, logStream);
         if (status > 1)
             return status;
         fprintf(out, "]");
     } else if (format.calculation != gCalc_none) {
         fprintf(out, "(");
-        status = gassembly_getOperand(in, out);
+        status = gassembly_getOperand(in, out, logStream);
         if (status > 1)
             return status;
 
         fprintf(out, " %c ", DELIMS_LIST[format.calculation]);   
         
-        status = gassembly_getOperand(in, out);
+        status = gassembly_getOperand(in, out, logStream);
         if (status > 1)
             return status;
         fprintf(out, ")");
@@ -548,18 +559,15 @@ static gassembly_status gassembly_getOperand(FILE *in, FILE *out)
         char regCode = 0;
         regCode = fgetc(in);
 
-        if (regCode == EOF)
-            return gassembly_status_ErrFile;
+        GASSEMBLY_ASSERT_LOG(regCode != EOF, gassembly_status_ErrFile);
         
-        if (regCode < 1 || regCode >= GASSEMBLY_MAX_REGISTERS)
-            return gassembly_status_ErrReg;
+        GASSEMBLY_ASSERT_LOG(regCode >= 1 && regCode < GASSEMBLY_MAX_REGISTERS, gassembly_status_ErrReg);
 
         fprintf(out, "%cx", regCode + 'a' - 1);
     } else {
         SPU_FLOAT_TYPE val = 0;
         if (!fread(&val, sizeof(SPU_FLOAT_TYPE), 1, in)) {
-            if (feof(in) || ferror(in))
-                return gassembly_status_ErrFile;
+            GASSEMBLY_ASSERT_LOG(!feof(in) && !ferror(in), gassembly_status_ErrFile);
             return gassembly_status_ErrLit;
         }
 
@@ -568,8 +576,15 @@ static gassembly_status gassembly_getOperand(FILE *in, FILE *out)
     return gassembly_status_OK;
 }
 
-gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out) 
-{
+gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out, FILE *newLogStream) 
+{   
+    FILE *logStream = stderr;
+    if (gPtrValid(newLogStream))
+        logStream = newLogStream;
+
+    GASSEMBLY_ASSERT_LOG(gPtrValid(in),  gassembly_status_BadInPtr);
+    GASSEMBLY_ASSERT_LOG(gPtrValid(out), gassembly_status_BadOutPtr);
+ 
     char opcode;
     gassembly_status status = gassembly_status_OK;
     fread(&opcode, sizeof(char), 1, in);
@@ -579,20 +594,18 @@ gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out)
     while (!feof(in)) {
         assert(opcode < gCnt);
         fprintf(out, "%s ", gDisassambleTable[opcode]);
-        while ((status = gassembly_getOperand(in, out)) == 0) {
-            if (fputc(' ', out) == EOF)
-                return gassembly_status_ErrFile;
+        while ((status = gassembly_getOperand(in, out, logStream)) == 0) {
+            GASSEMBLY_ASSERT_LOG(fputc(' ', out) != EOF, gassembly_status_ErrFile);
         }
 
         if (status != 1) {
-            fprintf(stderr, "Error occured while reading operand, error_code = %d\n", status);
+            fprintf(stderr, "Error occured while reading operand, error_code = %d (%s)\n", status, gassembly_statusMsg[status]);
             return status;
         }
         
         fprintf(out, "\n");
         fread(&opcode, sizeof(char), 1, in);
-        if (ferror(in))
-            return gassembly_status_ErrFile;
+        GASSEMBLY_ASSERT_LOG(!ferror(in), gassembly_status_ErrFile);
     }
     return gassembly_status_OK;
 }

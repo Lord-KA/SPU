@@ -1,11 +1,26 @@
 #include "ginterpreter.h"
 
-ginterpreter_status ginterpreter_ctor(ginterpreter *context, FILE *out)
+ginterpreter_status ginterpreter_ctor(ginterpreter *context, FILE *newOutStream, FILE *newLogStream)
 {
-    if (ptrValid(out))
-        context->outStream = out;
+    if (!gPtrValid(context)) {                                          
+        FILE *out;                                                   
+        if (!gPtrValid(newLogStream))                                
+            out = stderr;                                            
+        else                                                         
+            out = newLogStream;                                      
+        fprintf(out, "ERROR: bad structure ptr provided to interpreter ctor!\n");
+        return ginterpreter_status_BadSelfPtr;                         
+    }
+
+    if (ptrValid(newOutStream))
+        context->outStream = newOutStream;
     else
         context->outStream = stdout;
+   
+    if (ptrValid(newLogStream))
+        context->logStream = newLogStream;
+    else
+        context->logStream = stderr;
 
     stack_ctor(&context->Stack);
 
@@ -16,10 +31,8 @@ ginterpreter_status ginterpreter_ctor(ginterpreter *context, FILE *out)
 
     context->RAM = (SPU_FLOAT_TYPE*)calloc(GASSEMBLY_MAX_RAM_SIZE, sizeof(SPU_FLOAT_TYPE));
 
-    if (context->RAM == NULL) {
-        fprintf(stderr, "ERROR: Failed to allocate RAM memory!\n");
-        return ginterpreter_status_AllocErr;
-    }
+    GINTERPRETER_ASSERT_LOG(context->RAM != NULL, ginterpreter_status_AllocErr);
+   
     /* Filling commandJumpTable with fuction pointers defined in commands.tpl */
     #define COMMAND(name, Name, isFirst, argc, code) context->commandJumpTable[g##Name][argc] = (OpcodeFunctionPtr)&ginterpreter_##name##_##argc;
     #include "commands.tpl"
@@ -32,6 +45,7 @@ ginterpreter_status ginterpreter_ctor(ginterpreter *context, FILE *out)
 
 ginterpreter_status ginterpreter_dtor(ginterpreter *context)
 {
+    SELF_PTR_CHECK(context);
 
     stack_dtor(&context->Stack);
 
@@ -54,6 +68,8 @@ ginterpreter_status ginterpreter_dtor(ginterpreter *context)
  */
 ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TYPE **valuePtr)  //TODO add logs when error occures
 {
+    SELF_PTR_CHECK(context);
+
     operandFormat format = {};
 
     ginterpreter_status status = ginterpreter_status_OK;
@@ -61,8 +77,7 @@ ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TY
     format = *(operandFormat*)(context->bufCur);
     context->bufCur += sizeof(format);
 
-    if(!operandFormat_formatVerify(format))
-        return ginterpreter_status_BadFormat;
+    GINTERPRETER_ASSERT_LOG(operandFormat_formatVerify(format), ginterpreter_status_BadFormat);
 
     if (operandFormat_isEmpty(format)) {
         *valuePtr = NULL;
@@ -70,29 +85,22 @@ ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TY
     }
 
     if (format.isMemCall) {
-        fprintf(stderr, "Mem Call!\n");
-        if(ginterpreter_calcOperand(context, valuePtr) != 0)
-            return ginterpreter_status_BadMemCall;
+        GINTERPRETER_ASSERT_LOG(ginterpreter_calcOperand(context, valuePtr) == 0, ginterpreter_status_BadMemCall);
         *valuePtr = context->RAM + (SPU_INTEG_TYPE)**valuePtr;
     } else if (format.isRegister) {
-        fprintf(stderr, "Register!\n");
         char regCode = 0;
         regCode = *context->bufCur;
         ++context->bufCur;
         
-        if (regCode < 1 || regCode >= GASSEMBLY_MAX_REGISTERS) 
-            return ginterpreter_status_BadReg;
+        GINTERPRETER_ASSERT_LOG(regCode >= 1 && regCode < GASSEMBLY_MAX_REGISTERS, ginterpreter_status_BadReg); 
 
         *valuePtr = context->Registers + regCode;
     } else if (format.calculation != gCalc_none) {
-        fprintf(stderr, "Calculation!\n");
-        if(ginterpreter_calcOperand(context, valuePtr) != 0)
-            return ginterpreter_status_BadCalc;
+        GINTERPRETER_ASSERT_LOG(ginterpreter_calcOperand(context, valuePtr) == 0, ginterpreter_status_BadCalc);
 
         SPU_FLOAT_TYPE result = **valuePtr;
 
-        if(ginterpreter_calcOperand(context, valuePtr) != 0)
-            return ginterpreter_status_BadCalc;
+        GINTERPRETER_ASSERT_LOG(ginterpreter_calcOperand(context, valuePtr) == 0, ginterpreter_status_BadCalc);
 
         if (format.calculation == gCalc_mul) 
             result *= **valuePtr;
@@ -101,28 +109,28 @@ ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TY
         else if (format.calculation == gCalc_sub)
             result -= **valuePtr;
         else {
-            fprintf(stderr, "FATAL_ERROR: bad calculation option provided in bytecode\n");
+            fprintf(context->logStream, "FATAL_ERROR: bad calculation option provided in bytecode\n");
             return ginterpreter_status_BadCalc;
         }
         
         stack_push(&context->calcOp_stack, result);
         stack_top(&context->calcOp_stack, valuePtr);
     } else {
-        fprintf(stderr, "Literal!\n");
-
         stack_push(&context->calcOp_stack, *(SPU_FLOAT_TYPE*)(context->bufCur));
         context->bufCur += sizeof(SPU_FLOAT_TYPE);
         stack_top(&context->calcOp_stack, valuePtr);
-        fprintf(stderr, "ret_val = %lli\n", **valuePtr);
     }
+    #ifdef EXTRA_VERBOSE
+    fprintf(context->logStream, "ret_val = %lli\n", **valuePtr);
+    #endif
     return ginterpreter_status_OK;
 }
 
 
 ginterpreter_status ginterpreter_runFromFile(ginterpreter *context, FILE *in)
 {
-    char opcode;
-
+    SELF_PTR_CHECK(context);
+ 
     fseek(in, 0L, SEEK_END);
     context->buflen = ftell(in);
     fseek(in, 0L, SEEK_SET);
@@ -130,15 +138,16 @@ ginterpreter_status ginterpreter_runFromFile(ginterpreter *context, FILE *in)
 
     fread(context->Buffer, sizeof(char), context->buflen, in);
 
-    if (ferror(in))
-        return ginterpreter_status_FileErr;
+    GINTERPRETER_ASSERT_LOG(!ferror(in), ginterpreter_status_FileErr);
 
     return ginterpreter_runFromBuffer(context);
 }
 
 ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *context)
 {
-    char opcode;
+    SELF_PTR_CHECK(context);
+    ginterpreter_status status = ginterpreter_status_OK;
+    char opcode = 0;
 
     context->bufCur = context->Buffer;
 
@@ -148,30 +157,35 @@ ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *context)
         opcode = *context->bufCur;
         ++context->bufCur;
 
-        fprintf(stderr, "opcode = %d (%s)\n", opcode, gDisassambleTable[opcode]);
+        #ifdef EXTRA_VERBOSE
+        fprintf(context->logStream, "opcode = %d (%s)\n", opcode, gDisassambleTable[opcode]);      
+        #endif  
+
         size_t operandsCnt = 0;
         
         SPU_FLOAT_TYPE *Operands[GASSEMBLY_MAX_OPERANDS + 1] = {};
-        ginterpreter_status status = ginterpreter_status_OK;
         while ((status = ginterpreter_calcOperand(context, &Operands[operandsCnt])) == ginterpreter_status_OK) {
             if (Operands[operandsCnt] == NULL) {
-                stack_dtor(&context->calcOp_stack);
-                return ginterpreter_status_BadOperand;                            
+                status = ginterpreter_status_BadOperand;
+                goto finish;
             }
             ++operandsCnt;
         }
 
         assert(status != ginterpreter_status_OK && "This should never happen, because all operand sequences end with empty format");
 
-        if (status != ginterpreter_status_EmptyFormat) {
-            stack_dtor(&context->calcOp_stack);
-            return status;
-        }
+        if (status != ginterpreter_status_EmptyFormat)
+            goto finish;
 
         (*((void (*)(ginterpreter *, SPU_FLOAT_TYPE **))context->commandJumpTable[opcode][operandsCnt]))(context, Operands);
     }
+
+finish:
+    if (status == ginterpreter_status_EmptyFormat)
+        status = ginterpreter_status_OK;
     stack_dtor(&context->calcOp_stack);
-    return ginterpreter_status_OK;
+    GINTERPRETER_ASSERT_LOG(status == ginterpreter_status_OK, status);
+    return status;
 }
 
 ginterpreter_status ginterpreter_setPseudographicsWindow(ginterpreter *context, size_t height, size_t width) 
@@ -186,7 +200,7 @@ ginterpreter_status ginterpreter_setPseudographicsWindow(ginterpreter *context, 
     if (context->videoRAM == NULL) {
         context->videoHeight = -1;
         context->videoWidth  = -1;
-        return ginterpreter_status_AllocErr;
+        GINTERPRETER_ASSERT_LOG(false, ginterpreter_status_AllocErr);
     }
 
     return ginterpreter_status_OK;

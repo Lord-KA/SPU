@@ -14,7 +14,9 @@ typedef long long SPU_INTEG_TYPE;           /// The type for integer only usage 
 #define CHEAP_DEBUG                  
 typedef SPU_FLOAT_TYPE STACK_TYPE;          
 #define ELEM_PRINTF_FORM "%lli"
-
+#ifdef EXTRA_VERBOSE
+#define STACK_VERBOSE 2
+#endif
 
 static const char LOG_DELIM[] = "========================";
 
