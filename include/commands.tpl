@@ -18,8 +18,8 @@
  * `SPU_FLOAT_TYPE **valList` is a null-terminated list of opcode operands with length of `MAX_OPERANDS + 1`
  */
 
-#define POP(valPtr) stack_pop (&context->Stack, (valPtr))
-#define PUSH(val)   stack_push(&context->Stack, (val))
+#define POP(valPtr) GENERIC(stack_pop) (&context->Stack, (valPtr))
+#define PUSH(val)   GENERIC(stack_push)(&context->Stack, (val))
 #define GET_POS()     (context->bufCur - context->Buffer)
 #define SET_POS(pos)  (context->bufCur = context->Buffer + pos)
 #define OUT (context->outStream)
@@ -281,7 +281,7 @@ COMMAND(vset, Vset, true, 3, ({
 }))
 
 COMMAND(stackDump, StackDump, true, 0, ({
-    stack_dump(&context->Stack);
+    GENERIC(stack_dump)(&context->Stack);
 
 }))
 

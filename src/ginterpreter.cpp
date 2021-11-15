@@ -22,7 +22,7 @@ ginterpreter_status ginterpreter_ctor(ginterpreter *context, FILE *newOutStream,
     else
         context->logStream = stderr;
 
-    stack_ctor(&context->Stack);
+    GENERIC(stack_ctor)(&context->Stack);
 
     context->videoHeight = GASSEMBLY_DEFAULT_WINDOW_HEIGHT;
     context->videoWidth  = GASSEMBLY_DEFAULT_WINDOW_WIDTH;
@@ -47,7 +47,7 @@ ginterpreter_status ginterpreter_dtor(ginterpreter *context)
 {
     SELF_PTR_CHECK(context);
 
-    stack_dtor(&context->Stack);
+    GENERIC(stack_dtor)(&context->Stack);
 
     free(context->videoRAM);
     free(context->RAM);
@@ -113,12 +113,12 @@ ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TY
             return ginterpreter_status_BadCalc;
         }
         
-        stack_push(&context->calcOp_stack, result);
-        stack_top(&context->calcOp_stack, valuePtr);
+        GENERIC(stack_push)(&context->calcOp_stack, result);
+        GENERIC(stack_top)(&context->calcOp_stack, valuePtr);
     } else {
-        stack_push(&context->calcOp_stack, *(SPU_FLOAT_TYPE*)(context->bufCur));
+        GENERIC(stack_push)(&context->calcOp_stack, *(SPU_FLOAT_TYPE*)(context->bufCur));
         context->bufCur += sizeof(SPU_FLOAT_TYPE);
-        stack_top(&context->calcOp_stack, valuePtr);
+        GENERIC(stack_top)(&context->calcOp_stack, valuePtr);
     }
     #ifdef EXTRA_VERBOSE
     fprintf(context->logStream, "ret_val = %lli\n", **valuePtr);
@@ -151,7 +151,7 @@ ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *context)
 
     context->bufCur = context->Buffer;
 
-    stack_ctor(&context->calcOp_stack);
+    GENERIC(stack_ctor)(&context->calcOp_stack);
   
     while (context->bufCur < context->Buffer + context->buflen && !context->exited) {
         opcode = *context->bufCur;
@@ -183,7 +183,7 @@ ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *context)
 finish:
     if (status == ginterpreter_status_EmptyFormat)
         status = ginterpreter_status_OK;
-    stack_dtor(&context->calcOp_stack);
+    GENERIC(stack_dtor)(&context->calcOp_stack);
     GINTERPRETER_ASSERT_LOG(status == ginterpreter_status_OK, status);
     return status;
 }

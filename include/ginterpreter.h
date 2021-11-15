@@ -58,7 +58,7 @@ typedef void (*OpcodeFunctionPtr)(ginterpreter *, SPU_FLOAT_TYPE **);       /// 
 
 
 struct ginterpreter {
-    stack Stack;                    /// stack for hoarding values in runtime
+    GENERIC(stack) Stack;                    /// stack for hoarding values in runtime
     OpcodeFunctionPtr commandJumpTable[gCnt][GASSEMBLY_MAX_OPERANDS + 1] = {};    /// opcodes' function table
    
     SPU_FLOAT_TYPE Registers[GASSEMBLY_MAX_REGISTERS + 1] = {};                   /// array of registers
@@ -74,7 +74,7 @@ struct ginterpreter {
     long  buflen = -1;                      /// length of the buffer
 
     // SPU_FLOAT_TYPE calcOp_ret = 0;          /// service var to hold value in when calculating literal operands
-    stack calcOp_stack;
+    GENERIC(stack) calcOp_stack;
 
     int cmpReg = 0;                         /// service register for setting comp results in ( <0 when `a < b`, >0 when `a > b` and ==0 when `a == b` )
 
@@ -136,7 +136,7 @@ ginterpreter_status ginterpreter_setPseudographicsWindow(ginterpreter *interpret
  * WARNING: consider below magic and don't mess with it if not completely sure
  */
 #define COMMAND(name, Name, isFirst, argc, code) static void ginterpreter_##name##_##argc(ginterpreter *context, SPU_FLOAT_TYPE **valList) {code;}
-#include "commands.tpl"//TODO
+#include "commands.tpl"
 #undef COMMAND
 
 #endif /* GINTERPRETER_H */
