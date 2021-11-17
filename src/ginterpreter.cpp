@@ -85,9 +85,15 @@ ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TY
     }
 
     if (format.isMemCall) {
+        #ifdef EXTRA_VERBOSE
+            fprintf(context->logStream, "Mem Call!\n");
+        #endif
         GINTERPRETER_ASSERT_LOG(ginterpreter_calcOperand(context, valuePtr) == 0, ginterpreter_status_BadMemCall);
         *valuePtr = context->RAM + (SPU_INTEG_TYPE)**valuePtr;
     } else if (format.isRegister) {
+        #ifdef EXTRA_VERBOSE
+            fprintf(context->logStream, "Register!\n");
+        #endif
         char regCode = 0;
         regCode = *context->bufCur;
         ++context->bufCur;
@@ -96,6 +102,9 @@ ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TY
 
         *valuePtr = context->Registers + regCode;
     } else if (format.calculation != gCalc_none) {
+        #ifdef EXTRA_VERBOSE
+            fprintf(context->logStream, "Calculation!\n");
+        #endif
         GINTERPRETER_ASSERT_LOG(ginterpreter_calcOperand(context, valuePtr) == 0, ginterpreter_status_BadCalc);
 
         SPU_FLOAT_TYPE result = **valuePtr;
@@ -116,6 +125,9 @@ ginterpreter_status ginterpreter_calcOperand(ginterpreter *context, SPU_FLOAT_TY
         GENERIC(stack_push)(&context->calcOp_stack, result);
         GENERIC(stack_top)(&context->calcOp_stack, valuePtr);
     } else {
+        #ifdef EXTRA_VERBOSE
+            fprintf(context->logStream, "Literal!\n");
+        #endif
         GENERIC(stack_push)(&context->calcOp_stack, *(SPU_FLOAT_TYPE*)(context->bufCur));
         context->bufCur += sizeof(SPU_FLOAT_TYPE);
         GENERIC(stack_top)(&context->calcOp_stack, valuePtr);
@@ -151,11 +163,11 @@ ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *context)
 
     context->bufCur = context->Buffer;
 
-    GENERIC(stack_ctor)(&context->calcOp_stack);
   
     while (context->bufCur < context->Buffer + context->buflen && !context->exited) {
         opcode = *context->bufCur;
         ++context->bufCur;
+        GENERIC(stack_ctor)(&context->calcOp_stack);
 
         #ifdef EXTRA_VERBOSE
         fprintf(context->logStream, "opcode = %d (%s)\n", opcode, gDisassambleTable[opcode]);      
@@ -167,6 +179,7 @@ ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *context)
         while ((status = ginterpreter_calcOperand(context, &Operands[operandsCnt])) == ginterpreter_status_OK) {
             if (Operands[operandsCnt] == NULL) {
                 status = ginterpreter_status_BadOperand;
+                GENERIC(stack_dtor)(&context->calcOp_stack);
                 goto finish;
             }
             ++operandsCnt;
@@ -174,16 +187,19 @@ ginterpreter_status ginterpreter_runFromBuffer(ginterpreter *context)
 
         assert(status != ginterpreter_status_OK && "This should never happen, because all operand sequences end with empty format");
 
-        if (status != ginterpreter_status_EmptyFormat)
+        if (status != ginterpreter_status_EmptyFormat) {
+            GENERIC(stack_dtor)(&context->calcOp_stack);
             goto finish;
-
+        }
+        
         (*((void (*)(ginterpreter *, SPU_FLOAT_TYPE **))context->commandJumpTable[opcode][operandsCnt]))(context, Operands);
+
+        GENERIC(stack_dtor)(&context->calcOp_stack);
     }
 
 finish:
     if (status == ginterpreter_status_EmptyFormat)
         status = ginterpreter_status_OK;
-    GENERIC(stack_dtor)(&context->calcOp_stack);
     GINTERPRETER_ASSERT_LOG(status == ginterpreter_status_OK, status);
     return status;
 }

@@ -30,7 +30,7 @@ static const size_t GASSEMBLY_MAX_OPERANDS = 3;                           /// Th
 
 static const size_t GASSEMBLY_MAX_RAM_SIZE = 1 << 10;                     /// The gSPU RAM size
 
-static const size_t GASSEMBLY_DEFAULT_WINDOW_HEIGHT = 80;
-static const size_t GASSEMBLY_DEFAULT_WINDOW_WIDTH  = 120;
+static const size_t GASSEMBLY_DEFAULT_WINDOW_HEIGHT = 40;
+static const size_t GASSEMBLY_DEFAULT_WINDOW_WIDTH  = 80;
 
 #endif

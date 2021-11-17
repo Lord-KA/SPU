@@ -96,7 +96,7 @@ gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out, FILE *logStream
  * @brief finds first `operation` char that is outside of brackets
  * @param buffer null-terminated char array to search in
  * @param operation char to find
- * @return pointer to the found operation
+ * @return pointer to the found operation and NULL if there is no such char if buffer
  */
 static char *findFirstExternalOp(const char *buffer, const char operation);
 
@@ -115,6 +115,14 @@ static bool isMemCall(const char *buffer);
  * @return `true` if correct register, `false` otherwise
  */
 static bool isRegister(const char *buffer);
+
+
+/**
+ * @brief checks if the buffer is an expression fully inside `()`
+ * @param buffer null-terminated char array to check
+ * @return `true` if expression inside `()`, `false` otherwise
+ */
+static bool isCalculation(const char *buffer);
 
 
 /**

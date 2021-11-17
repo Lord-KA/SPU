@@ -1,0 +1,42 @@
+draw_circle:        ; gets the circle-center coordinates via `ax` and `bx`, gets radius via `cx`
+    mov [curX], 0
+    mov [curY], 0
+
+    loop:
+        mov [sum], (([curX] - ax) * ([curX] - ax)) + (([curY] - bx) * ([curY] - bx))
+        cmp [sum], cx * cx
+        jg pass_1
+           vset [curX], [curY], 42    ;   42 == '*'
+        pass_1:
+        inc [curY]
+        cmp [curY], 80
+        jne pass_2
+            inc [curX]
+            mov [curY], 0
+        pass_2:
+        cmp [curX], 40
+        jeq finish
+        jmp loop
+
+finish:
+    vflush
+    ret
+
+
+main:
+    mov ax, 10
+    mov bx, 10
+    mov cx, 3
+
+    call draw_circle
+
+    ret
+
+
+
+sum:
+idle 0
+curX:
+idle 0
+curY:
+idle 0

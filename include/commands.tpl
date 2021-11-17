@@ -24,7 +24,7 @@
 #define SET_POS(pos)  (context->bufCur = context->Buffer + pos)
 #define OUT (context->outStream)
 #define EXIT() (context->exited = true)
-#define VIDEO_RAM(y, x) (context->videoRAM[(y) * context->videoWidth + (x)])
+#define VIDEO_RAM(x, y) (context->videoRAM[(y) * context->videoWidth + (x)])
 #define VIDEO_HEIGHT (context->videoHeight)
 #define VIDEO_WIDTH  (context->videoWidth)
 #define CMP_REG (context->cmpReg)
@@ -186,6 +186,13 @@ COMMAND(jeq, Jeq, true, 1, ({
     }
 }))
 
+COMMAND(jne, Jne, true, 1, ({
+    if (CMP_REG != 0) {    
+        SPU_INTEG_TYPE pos = ARG_1;
+        SET_POS(pos);
+    }
+}))
+
 COMMAND(jl, Jl, true, 1, ({
     if (CMP_REG < 0) {    
         SPU_INTEG_TYPE pos = ARG_1;
@@ -269,20 +276,24 @@ COMMAND(dumpArgs, DumpArgs, false, 3, ({
 
 COMMAND(vflush, Vflush, true, 0, ({
     assert(VIDEO_WIDTH != -1 && VIDEO_HEIGHT != -1);
-    for (size_t x = 0; x < VIDEO_WIDTH; ++x) {
-        for (size_t y = 0; y < VIDEO_HEIGHT; ++y) 
-            fputc(VIDEO_RAM(y, x), OUT);
+    for (size_t y = 0; y < VIDEO_HEIGHT; ++y) {
+        for (size_t x = 0; x < VIDEO_WIDTH; ++x) {
+            if (VIDEO_RAM(x, y) != 0)
+                fputc(VIDEO_RAM(x, y), OUT);
+            else
+                fputc(' ', OUT);
+        }
         fputc('\n', OUT);
     }
 }))
 
 COMMAND(vset, Vset, true, 3, ({
+    assert(ARG_1 < VIDEO_WIDTH && ARG_2 < VIDEO_HEIGHT);
     VIDEO_RAM(ARG_1, ARG_2) = (char)ARG_3;
 }))
 
 COMMAND(stackDump, StackDump, true, 0, ({
     GENERIC(stack_dump)(&context->Stack);
-
 }))
 
 #undef PUSH

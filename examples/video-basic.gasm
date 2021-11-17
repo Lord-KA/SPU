@@ -1,6 +1,6 @@
 main:
-    vset 1, 0, 97
-    vset 2, 0, 98
+    vset 0, 0, 97
+    vset 1, 0, 98
     vset 3, 0, 99
     vset 4, 0, 100
     vset 5, 0, 101

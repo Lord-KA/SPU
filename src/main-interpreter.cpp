@@ -8,6 +8,8 @@ int main() {
     int status = ginterpreter_runFromFile(&inter, stdin);
     if (status != ginterpreter_status_OK)
         fprintf(stderr, "ERROR: error occured during interpretation, exit_code = %d (%s)\n", status, ginterpreter_statusMsg[status]);
-    GENERIC(stack_dump)(&inter.Stack);
+    #ifdef EXTRA_VERBOSE
+        GENERIC(stack_dump)(&inter.Stack);
+    #endif
     ginterpreter_dtor(&inter);
 }

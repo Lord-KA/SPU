@@ -72,8 +72,12 @@ static bool isRegister(const char *buffer)
         ++iter;
     if (iter - buffer < strlen(buffer) + 1
             && (*iter >= 'a' && *iter - 'a' < GASSEMBLY_MAX_REGISTERS)
-            && (*(iter + 1) == 'x'))
+            && (*(iter + 1) == 'x')) {
+        ++iter;
+        while (isspace(*(++iter))) {}
+        if (*iter == '\0')
             return true;
+    }
     return false;
 }
 
@@ -97,6 +101,30 @@ static bool isLable(const char *buffer)
         ++iter;
     }
     return true;
+}
+
+static bool isCalculation(const char *buffer)
+{
+    assert(gPtrValid(buffer));
+
+    char *iter = (char*)buffer;
+    while (isspace(*iter)) 
+        ++iter;
+ 
+    if(*iter != '(' || *iter == '\0')
+        return false;
+    ++iter;
+
+    char *closeBrack = findFirstExternalOp(iter, ')');
+    if (closeBrack == NULL)
+        return false;
+
+    while (isspace(*(++closeBrack))) {}
+    
+    if (*closeBrack == '\0')
+        return true;
+
+    return false;    
 }
 
 static gassembly_status gassembly_putOperand(const char *operand, FILE *out, const bool fixupRun, FILE *newLogStream) 
@@ -141,6 +169,9 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
     char *brackPos = NULL;
 
     if (isInteger(operand)) {
+        #ifdef EXTRA_VERBOSE
+            fprintf(logStream, "Literal integer case; operand = #%s#\n", operand);
+        #endif
         /* Literal integer case */                     
         format.isMemCall  = 0;
         format.isRegister = 0;
@@ -153,6 +184,9 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
         GASSEMBLY_ASSERT_LOG(fwrite(&val, sizeof(SPU_INTEG_TYPE), 1, out) == 1, gassembly_status_ErrFile);
 
     } else if (isDouble(operand)) {
+        #ifdef EXTRA_VERBOSE
+            fprintf(logStream, "Literal double case; operand = #%s#\n", operand);
+        #endif
         /* Literal double case */
         format.isMemCall  = 0;
         format.isRegister = 0;
@@ -164,6 +198,9 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
 
         GASSEMBLY_ASSERT_LOG(fwrite(&val, sizeof(SPU_INTEG_TYPE), 1, out) == 1, gassembly_status_ErrFile);
     } else if (isRegister(operand)) {
+        #ifdef EXTRA_VERBOSE
+            fprintf(logStream, "Register case; operand = #%s#\n", operand);
+        #endif
         /* Register case */
         format.isMemCall  = 0;
         format.isRegister = 1;
@@ -179,6 +216,9 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
         GASSEMBLY_ASSERT_LOG(fputc(regCode, out) != EOF, gassembly_status_ErrFile);
 
     } else if (isLable(operand)) {
+        #ifdef EXTRA_VERBOSE
+            fprintf(logStream, "Lable case; operand = #%s#\n", operand);
+        #endif
         /* Lable case */
         format.isMemCall  = 0;
         format.isRegister = 0;
@@ -199,6 +239,9 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
         GASSEMBLY_ASSERT_LOG(fwrite(&gassembly_Fixups[i], sizeof(SPU_INTEG_TYPE), 1, out) == 1, gassembly_status_ErrFile);
 
     } else if (isMemCall(operand)) {
+        #ifdef EXTRA_VERBOSE
+            fprintf(logStream, "Mem call case; operand = #%s#", operand);
+        #endif
         /* Mem call case */
         char subOperand[GASSEMBLY_MAX_LINE_SIZE] = {};
         char *openBrackPos = (char*)strchr(operand, '[');
@@ -212,16 +255,25 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
         format.calculation = gCalc_none;
         GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
         
+        #ifdef EXTRA_VERBOSE
+            fprintf(logStream, " subOperand = #%s#\n", subOperand);
+        #endif
         gassembly_putOperand(subOperand, out, fixupRun, logStream);
     } 
-    else if (*operand == '(' && *(operand + operandLen - 1) == ')' ) {
-        /* Brackets calculation case */      
+    else if (isCalculation(operand)) {
+        #ifdef EXTRA_VERBOSE
+            fprintf(logStream, "Brackets calculation case; operand = #%s#\n", operand);
+        #endif
+        /* Brackets calculation case */
         
         char subOperand[GASSEMBLY_MAX_LINE_SIZE] = {};
         strncpy(subOperand, operand + 1, operandLen - 2);
 
         gassembly_putOperand(subOperand, out, fixupRun, logStream);
     } else {
+        #ifdef EXTRA_VERBOSE
+            fprintf(logStream, "Calculation case; operand = #%s#", operand);
+        #endif
         /* Resolving calculations case */
         char *addPos = findFirstExternalOp(operand, '+');
         char *subPos = findFirstExternalOp(operand, '-');
@@ -269,6 +321,9 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
         ++opPos;
         strncpy(subOperand_2, opPos,  operandLen - (opPos - operand));
 
+        #ifdef EXTRA_VERBOSE
+            fprintf(logStream, " subOperand_1 = #%s# subOperand_2 = #%s#\n", subOperand_1, subOperand_2);
+        #endif
         int status_1 = gassembly_putOperand(subOperand_1, out, fixupRun, logStream);
         int status_2 = gassembly_putOperand(subOperand_2, out, fixupRun, logStream);
         if (status_1 != 0 || status_2 != 0)

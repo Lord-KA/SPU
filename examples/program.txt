@@ -1,16 +1,2 @@
 main:
-    push 1234
-    push 5678
-    jmp lable_1
-    jmp lable_2
-
-    push 104
-    jmp lable_3
-lable_3:
-
-lable_2:
-lable_1:
-    add
-lable_4:
-    out
-    ret
+    push [(ax + 13) * (ax + 13)]
