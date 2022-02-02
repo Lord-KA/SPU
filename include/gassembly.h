@@ -11,19 +11,19 @@
 #include "gopcodes.h"
 
 static const char DIGITS_LIST[] = "0123456789";             /// string of all digits is used to check if string consists any/only them
-static const char DELIMS_LIST[] = "[]+-*()";                /// string of all delims besides spaces, used for detecting delims 
+static const char DELIMS_LIST[] = "[]+-*()";                /// string of all delims besides spaces, used for detecting delims
                                                             ///               and printing operations in disassembly
 
 static char gassembly_Lables[GASSEMBLY_MAX_LABLES][GASSEMBLY_MAX_LINE_SIZE] = {};   /// array of goto lables for assembly
 static SPU_INTEG_TYPE gassembly_Fixups[GASSEMBLY_MAX_LABLES] = {};                  /// array of goto locations for assembly, is synced with lables array
-   
+
 /**
  * @brief status codes for assembly
  */
 enum gassembly_status {
-    gassembly_status_OK = 0,        
-    gassembly_status_Empty,       
-    gassembly_status_ErrLit,       
+    gassembly_status_OK = 0,
+    gassembly_status_Empty,
+    gassembly_status_ErrLit,
     gassembly_status_ErrReg,
     gassembly_status_ErrCalc,
     gassembly_status_ErrLable,
@@ -64,10 +64,10 @@ static const char gassembly_statusMsg[gassembly_status_Cnt][GASSEMBLY_MAX_LINE_S
 #define GASSEMBLY_ASSERT_LOG(expr, errCode)
 #endif
 
-/* 
+/*
  * WARNING: all functions below use null-terminated c-style string without any additional validation.
- * 
- * WARNING: some of the functions below require a string with NO opening spaces, 
+ *
+ * WARNING: some of the functions below require a string with NO opening spaces,
  *          it will be mentioned in the implementation.
  */
 

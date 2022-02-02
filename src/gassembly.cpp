@@ -11,7 +11,7 @@
 static char *findFirstExternalOp(const char *buffer, const char operation)
 {
     assert(gPtrValid(buffer));
-    char *opPos = (char*)buffer;  
+    char *opPos = (char*)buffer;
     size_t bufferLen = strlen(buffer);
     size_t memBracketBalance  = 0;
     size_t calcBracketBalance = 0;
@@ -34,7 +34,7 @@ static char *findFirstExternalOp(const char *buffer, const char operation)
         return NULL;
 }
 
-static bool isMemCall(const char *buffer) 
+static bool isMemCall(const char *buffer)
 {
     assert(gPtrValid(buffer));
     /*
@@ -60,15 +60,15 @@ static bool isMemCall(const char *buffer)
 
     if (*closeBrackPos != '\0')
         return false;
-    else 
+    else
         return true;
 }
 
-static bool isRegister(const char *buffer) 
+static bool isRegister(const char *buffer)
 {
     assert(gPtrValid(buffer));
     char *iter = (char*)buffer;
-    while (isspace(*iter)) 
+    while (isspace(*iter))
         ++iter;
     if (iter - buffer < strlen(buffer) + 1
             && (*iter >= 'a' && *iter - 'a' < GASSEMBLY_MAX_REGISTERS)
@@ -81,16 +81,16 @@ static bool isRegister(const char *buffer)
     return false;
 }
 
-static bool isLable(const char *buffer) 
+static bool isLable(const char *buffer)
 {
     assert(gPtrValid(buffer));
     if (isRegister(buffer))
         return false;
 
     char *iter = (char*)buffer;
-    while (isspace(*iter)) 
+    while (isspace(*iter))
         ++iter;
-    
+
     if (!isalpha(*iter) || *iter == '\0')           //TODO maybe add local lable support (like `.loop`)
         return false;
     ++iter;
@@ -108,9 +108,9 @@ static bool isCalculation(const char *buffer)
     assert(gPtrValid(buffer));
 
     char *iter = (char*)buffer;
-    while (isspace(*iter)) 
+    while (isspace(*iter))
         ++iter;
- 
+
     if(*iter != '(' || *iter == '\0')
         return false;
     ++iter;
@@ -120,14 +120,14 @@ static bool isCalculation(const char *buffer)
         return false;
 
     while (isspace(*(++closeBrack))) {}
-    
+
     if (*closeBrack == '\0')
         return true;
 
-    return false;    
+    return false;
 }
 
-static gassembly_status gassembly_putOperand(const char *operand, FILE *out, const bool fixupRun, FILE *newLogStream) 
+static gassembly_status gassembly_putOperand(const char *operand, FILE *out, const bool fixupRun, FILE *newLogStream)
 {
     FILE *logStream = stderr;
     if (gPtrValid(newLogStream))
@@ -172,13 +172,13 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
         #ifdef EXTRA_VERBOSE
             fprintf(logStream, "Literal integer case; operand = #%s#\n", operand);
         #endif
-        /* Literal integer case */                     
+        /* Literal integer case */
         format.isMemCall  = 0;
         format.isRegister = 0;
         format.calculation = gCalc_none;
         GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
 
-        SPU_INTEG_TYPE val = 0;          
+        SPU_INTEG_TYPE val = 0;
         GASSEMBLY_ASSERT_LOG(sscanf(operand, "%lli%n", &val, &isOk) == 1, gassembly_status_ErrLit);
 
         GASSEMBLY_ASSERT_LOG(fwrite(&val, sizeof(SPU_INTEG_TYPE), 1, out) == 1, gassembly_status_ErrFile);
@@ -193,7 +193,7 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
         format.calculation = gCalc_none;
         GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
 
-        SPU_FLOAT_TYPE val = 0;          
+        SPU_FLOAT_TYPE val = 0;
         GASSEMBLY_ASSERT_LOG(sscanf(operand, "%lg%n", &val, &isOk) == 1, gassembly_status_ErrLit);
 
         GASSEMBLY_ASSERT_LOG(fwrite(&val, sizeof(SPU_INTEG_TYPE), 1, out) == 1, gassembly_status_ErrFile);
@@ -231,10 +231,10 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
 
         size_t i = 0;
         if (!fixupRun) {
-    
+
             while (i < GASSEMBLY_MAX_LABLES && strcmp(gassembly_Lables[i], lable) != 0)
                 ++i;
-            GASSEMBLY_ASSERT_LOG(i != GASSEMBLY_MAX_LABLES, gassembly_status_ErrLable);      
+            GASSEMBLY_ASSERT_LOG(i != GASSEMBLY_MAX_LABLES, gassembly_status_ErrLable);
         }
         GASSEMBLY_ASSERT_LOG(fwrite(&gassembly_Fixups[i], sizeof(SPU_INTEG_TYPE), 1, out) == 1, gassembly_status_ErrFile);
 
@@ -254,18 +254,18 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
         format.isRegister = 0;
         format.calculation = gCalc_none;
         GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
-        
+
         #ifdef EXTRA_VERBOSE
             fprintf(logStream, " subOperand = #%s#\n", subOperand);
         #endif
         gassembly_putOperand(subOperand, out, fixupRun, logStream);
-    } 
+    }
     else if (isCalculation(operand)) {
         #ifdef EXTRA_VERBOSE
             fprintf(logStream, "Brackets calculation case; operand = #%s#\n", operand);
         #endif
         /* Brackets calculation case */
-        
+
         char subOperand[GASSEMBLY_MAX_LINE_SIZE] = {};
         strncpy(subOperand, operand + 1, operandLen - 2);
 
@@ -294,7 +294,7 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
             format.isRegister = 0;
             format.calculation = gCalc_add;
             GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
-            
+
             opPos = addPos;
             calcOp = '+';
         } else {
@@ -303,7 +303,7 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
             format.isRegister = 0;
             format.calculation = gCalc_sub;
             GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
-            
+
             opPos = subPos;
             calcOp = '-';
         }
@@ -313,7 +313,7 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
             return gassembly_status_ErrCalc;
         }
         assert(opPos > operand);
-        
+
         char subOperand_1[GASSEMBLY_MAX_LINE_SIZE] = {};
         char subOperand_2[GASSEMBLY_MAX_LINE_SIZE] = {};
 
@@ -334,45 +334,45 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
 }
 
 static gassembly_status gassembly_putOpening(FILE *out, const bool fixupRun, const size_t offset, FILE *newLogStream)
-{    
+{
     FILE *logStream = stderr;
     if (gPtrValid(newLogStream))
         logStream = newLogStream;
 
     GASSEMBLY_ASSERT_LOG(gPtrValid(out), gassembly_status_BadOutPtr);
- 
+
     char buffer_1[GASSEMBLY_MAX_LINE_SIZE] = "call main";
     gassembly_status status = gassembly_assembleFromLine("call main", out, fixupRun, offset, logStream);
     if (status > 1) {
         fprintf(logStream, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], "call main   ; This is an automaticly added opening line");
         return status;
     }
-    
+
     char buffer_2[GASSEMBLY_MAX_LINE_SIZE] = "exit";
     status = gassembly_assembleFromLine("exit", out, fixupRun, offset, logStream);
     if (status > 1) {
-        fprintf(logStream, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], "exit   ; This is an automaticly added opening line"); 
+        fprintf(logStream, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], "exit   ; This is an automaticly added opening line");
         return status;
     }
 
     return gassembly_status_OK;
 }
 
-gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out, FILE *newLogStream) 
-{  
+gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out, FILE *newLogStream)
+{
     FILE *logStream = stderr;
     if (gPtrValid(newLogStream))
         logStream = newLogStream;
 
     GASSEMBLY_ASSERT_LOG(gPtrValid(in),  gassembly_status_BadInPtr);
     GASSEMBLY_ASSERT_LOG(gPtrValid(out), gassembly_status_BadOutPtr);
- 
+
     char buffer[GASSEMBLY_MAX_LINE_SIZE] = {};
-    
-    gassembly_status status; 
+
+    gassembly_status status;
     const long startPos = ftell(in);
     const long offset   = ftell(out);
-    FILE *devNull = tmpfile(); 
+    FILE *devNull = tmpfile();
     bool fixupRun = true;
 
     size_t line = 1;
@@ -400,7 +400,7 @@ gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out, FILE *newLogStr
     fixupRun = false;
     fseek(in, startPos, SEEK_SET);
     GASSEMBLY_ASSERT_LOG(getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in), gassembly_status_ErrFile);
-        
+
     status = gassembly_putOpening(out, fixupRun, offset, logStream);
     if (status != gassembly_status_OK)
         return status;
@@ -443,14 +443,14 @@ static bool gassembly_getLable(const char *buffer, char **beg, char **end)
     *beg = iter;
     if (!isalpha(*iter))
         return false;
-    
+
     while (isalpha(*iter) || isdigit(*iter) || *iter == '_')
         ++iter;
     *end = iter;
-    
+
     while (isspace(*iter))
         ++iter;
-    
+
     if (*iter != ':')
         return false;
 
@@ -463,7 +463,7 @@ static bool gassembly_getLable(const char *buffer, char **beg, char **end)
     return true;
 }
 
-gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun, const long offset, FILE *newLogStream) 
+gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const bool fixupRun, const long offset, FILE *newLogStream)
 {
     FILE *logStream = stderr;
     if (gPtrValid(newLogStream))
@@ -471,27 +471,27 @@ gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const
 
     GASSEMBLY_ASSERT_LOG(gPtrValid(buffer), gassembly_status_BadOpPtr);
     GASSEMBLY_ASSERT_LOG(gPtrValid(out),    gassembly_status_BadOutPtr);
- 
-    /* 
+
+    /*
      * WARNING: `buffer` must be a null terminated
-     * string with len eq GASSEMBLY_MAX_LINE_SIZE 
+     * string with len eq GASSEMBLY_MAX_LINE_SIZE
      */
 
     gassembly_status status = gassembly_status_OK;
-    
+
     /* cropping comments that start with `;` */
     char *commentPos = (char*)strchr(buffer, ';');
     if (commentPos != NULL)
         *commentPos = '\0';
-    
+
     /* checking if line is only spaces */
-    while (isspace(*buffer)) 
+    while (isspace(*buffer))
         ++buffer;
 
     if (*buffer == '\0')
         return gassembly_status_Empty;
 
-    char *lableBeg = NULL;  
+    char *lableBeg = NULL;
     char *lableEnd = NULL;
     if (gassembly_getLable(buffer, &lableBeg, &lableEnd)) {
         if (fixupRun) {
@@ -509,7 +509,7 @@ gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const
         }
         return gassembly_status_Empty;
     }
-    
+
 
     char   keyword[GASSEMBLY_MAX_LINE_SIZE] = {};
     char operand_1[GASSEMBLY_MAX_LINE_SIZE] = {};
@@ -526,8 +526,8 @@ gassembly_status gassembly_assembleFromLine(const char *buffer, FILE *out, const
         return gassembly_status_ErrOpcode;
     }
     GASSEMBLY_ASSERT_LOG(fputc(opcode, out) != EOF, gassembly_status_ErrFile);
-    
-    /* 
+
+    /*
      * By now buffer shell not have opening spaces
      */
     char *operands = (char*)buffer;
@@ -567,7 +567,7 @@ finish:
     return gassembly_status_OK;
 }
 
-static gassembly_status gassembly_getOperand(FILE *in, FILE *out, FILE *newLogStream) 
+static gassembly_status gassembly_getOperand(FILE *in, FILE *out, FILE *newLogStream)
 {
     FILE *logStream = stderr;
     if (gPtrValid(newLogStream))
@@ -575,8 +575,8 @@ static gassembly_status gassembly_getOperand(FILE *in, FILE *out, FILE *newLogSt
 
     GASSEMBLY_ASSERT_LOG(gPtrValid(in),  gassembly_status_BadInPtr);
     GASSEMBLY_ASSERT_LOG(gPtrValid(out), gassembly_status_BadOutPtr);
- 
- 
+
+
     gassembly_status status = gassembly_status_OK;
     operandFormat format;
     if (fread(&format, sizeof(format), 1, in) != 1) {
@@ -604,8 +604,8 @@ static gassembly_status gassembly_getOperand(FILE *in, FILE *out, FILE *newLogSt
         if (status > 1)
             return status;
 
-        fprintf(out, " %c ", DELIMS_LIST[format.calculation]);   
-        
+        fprintf(out, " %c ", DELIMS_LIST[format.calculation]);
+
         status = gassembly_getOperand(in, out, logStream);
         if (status > 1)
             return status;
@@ -615,7 +615,7 @@ static gassembly_status gassembly_getOperand(FILE *in, FILE *out, FILE *newLogSt
         regCode = fgetc(in);
 
         GASSEMBLY_ASSERT_LOG(regCode != EOF, gassembly_status_ErrFile);
-        
+
         GASSEMBLY_ASSERT_LOG(regCode >= 1 && regCode < GASSEMBLY_MAX_REGISTERS, gassembly_status_ErrReg);
 
         fprintf(out, "%cx", regCode + 'a' - 1);
@@ -631,15 +631,15 @@ static gassembly_status gassembly_getOperand(FILE *in, FILE *out, FILE *newLogSt
     return gassembly_status_OK;
 }
 
-gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out, FILE *newLogStream) 
-{   
+gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out, FILE *newLogStream)
+{
     FILE *logStream = stderr;
     if (gPtrValid(newLogStream))
         logStream = newLogStream;
 
     GASSEMBLY_ASSERT_LOG(gPtrValid(in),  gassembly_status_BadInPtr);
     GASSEMBLY_ASSERT_LOG(gPtrValid(out), gassembly_status_BadOutPtr);
- 
+
     char opcode;
     gassembly_status status = gassembly_status_OK;
     fread(&opcode, sizeof(char), 1, in);
@@ -657,7 +657,7 @@ gassembly_status gassembly_disassembleFromFile(FILE *in, FILE *out, FILE *newLog
             fprintf(stderr, "Error occured while reading operand, error_code = %d (%s)\n", status, gassembly_statusMsg[status]);
             return status;
         }
-        
+
         fprintf(out, "\n");
         fread(&opcode, sizeof(char), 1, in);
         GASSEMBLY_ASSERT_LOG(!ferror(in), gassembly_status_ErrFile);

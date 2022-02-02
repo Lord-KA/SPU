@@ -121,6 +121,10 @@ COMMAND(div, Div, false, 2, ({
     ARG_1 /= ARG_2;
 }))
 
+COMMAND(pow, Pow, true, 2, ({
+    ARG_1 = pow(ARG_1, ARG_2);
+}))
+
 
 COMMAND(mov, Mov, true, 2, ({
     ARG_1 = ARG_2;

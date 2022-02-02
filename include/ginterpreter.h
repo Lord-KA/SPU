@@ -10,11 +10,12 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <assert.h>
+#include <math.h>
 
 struct ginterpreter;
 
 enum ginterpreter_status {
-    ginterpreter_status_OK = 0,         
+    ginterpreter_status_OK = 0,
     ginterpreter_status_EmptyFormat,
     ginterpreter_status_BadMemCall,
     ginterpreter_status_BadCalc,
@@ -60,7 +61,7 @@ typedef void (*OpcodeFunctionPtr)(ginterpreter *, SPU_FLOAT_TYPE **);       /// 
 struct ginterpreter {
     GENERIC(stack) Stack;                    /// stack for hoarding values in runtime
     OpcodeFunctionPtr commandJumpTable[gCnt][GASSEMBLY_MAX_OPERANDS + 1] = {};    /// opcodes' function table
-   
+
     SPU_FLOAT_TYPE Registers[GASSEMBLY_MAX_REGISTERS + 1] = {};                   /// array of registers
 
     SPU_FLOAT_TYPE *RAM;                    /// memory accessible to an assembly programmer

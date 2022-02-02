@@ -1,2 +1,5 @@
 main:
-    push [(ax + 13) * (ax + 13)]
+    mov ax, 3
+    pow ax, 10
+    out ax
+    ret
