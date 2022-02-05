@@ -273,6 +273,7 @@ COMMAND(inc, Inc, false, 1, ({
     ARG_1 += 1;
 }))
 
+
 COMMAND(sqrt, Sqrt, true, 0, ({
     SPU_FLOAT_TYPE val;
     double tmp = 0;
@@ -286,6 +287,36 @@ COMMAND(sqrt, Sqrt, false, 1, ({
     double tmp = 0;
     tmp = ARG_1;
     ARG_1 = sqrt(tmp);
+}))
+
+COMMAND(sin, Sin, true, 0, ({
+    SPU_FLOAT_TYPE val;
+    double tmp = 0;
+    POP(&val);
+    tmp = val;
+    val = sin(tmp);
+    PUSH(val);
+}))
+
+COMMAND(sin, Sin, false, 1, ({
+    double tmp = 0;
+    tmp = ARG_1;
+    ARG_1 = sin(tmp);
+}))
+
+COMMAND(cos, Cos, true, 0, ({
+    SPU_FLOAT_TYPE val;
+    double tmp = 0;
+    POP(&val);
+    tmp = val;
+    val = cos(tmp);
+    PUSH(val);
+}))
+
+COMMAND(cos, Cos, false, 1, ({
+    double tmp = 0;
+    tmp = ARG_1;
+    ARG_1 = cos(tmp);
 }))
 
 
