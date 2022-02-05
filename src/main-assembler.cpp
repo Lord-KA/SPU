@@ -9,13 +9,13 @@ enum gMode {
 };
 
 int main(int argc, char **argv) {
-    
+
     int c = 0;
     gMode mode = gNone;
     char *fileName = NULL;
     FILE *in  = stdin;
     FILE *out = stdout;
-    
+
     while ((c = getopt(argc, argv, "adho:")) != -1) {
         switch(c) {
         case 'h':

@@ -17,7 +17,7 @@
 #define COMMAND_IS_FIRST_true(name, Name, isFirst) g##Name ,
 #define COMMAND_IS_FIRST_false(...)
 enum gCommand : unsigned char {
-    
+
     #include "commands.tpl"
     gCnt,
 };
@@ -31,13 +31,13 @@ enum gCommand : unsigned char {
 #define COMMAND_IS_FIRST_true(name, Name, isFirst) #name ,
 static const char gDisassambleTable[gCnt][10] = {
     #include "commands.tpl"
-    }; 
+    };
 #undef COMMAND_IS_FIRST_true
 #undef COMMAND_IS_FIRST_false
 #undef COMMAND
 
-/** 
- * Below is used for universal opcode operand formating 
+/**
+ * Below is used for universal opcode operand formating
  */
 
 /**
@@ -54,9 +54,9 @@ enum gCalc : unsigned short {
 /**
  * @brief a one-byte structure that describes subsequent operand
  */
-struct __attribute__((packed)) {  
-    bool   isMemCall   : 1;         
-    bool   isRegister  : 1;  /// could be register or literal 
+struct __attribute__((packed)) {
+    bool   isMemCall   : 1;
+    bool   isRegister  : 1;  /// could be register or literal
     gCalc  calculation : 3;
 
     int alignment      : 3;  /// service unused value for filling the rest of the bits
@@ -100,10 +100,10 @@ static bool operandFormat_formatVerify(const operandFormat format)
    if (operandFormat_isEmpty(format))
         return true;
 
-    if (format.isMemCall) 
+    if (format.isMemCall)
         return (format.calculation == gCalc_none);
 
-    if (format.isRegister) 
+    if (format.isRegister)
         return (!format.isMemCall && (format.calculation == gCalc_none));
 
     if (format.calculation != gCalc_none)

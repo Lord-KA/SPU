@@ -1,2 +1,5 @@
 main:
-    push [(ax + 13) * (ax + 13)]
+    push 0
+    cos
+    out
+    ret

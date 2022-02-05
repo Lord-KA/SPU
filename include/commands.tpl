@@ -121,9 +121,39 @@ COMMAND(div, Div, false, 2, ({
     ARG_1 /= ARG_2;
 }))
 
+COMMAND(pow, Pow, true, 0, ({
+    SPU_FLOAT_TYPE val_1, val_2, res;
+
+    POP(&val_2);
+    POP(&val_1);
+        
+    res = pow(val_1, val_2);
+
+    PUSH(res);
+}))
+
+COMMAND(pow, Pow, false, 2, ({
+    ARG_1 = pow(ARG_1, ARG_2);
+}))
+
 
 COMMAND(mov, Mov, true, 2, ({
     ARG_1 = ARG_2;
+}))
+
+COMMAND(cmovl, CMovL, true, 2, ({
+    if (CMP_REG < 0)
+        ARG_1 = ARG_2;
+}))
+
+COMMAND(cmovg, CMovG, true, 2, ({
+    if (CMP_REG > 0)
+        ARG_1 = ARG_2;
+}))
+
+COMMAND(cmove, CMovE, true, 2, ({
+    if (CMP_REG == 0)
+        ARG_1 = ARG_2;
 }))
 
 COMMAND(out, Out, true, 0, ({
@@ -243,6 +273,7 @@ COMMAND(inc, Inc, false, 1, ({
     ARG_1 += 1;
 }))
 
+
 COMMAND(sqrt, Sqrt, true, 0, ({
     SPU_FLOAT_TYPE val;
     double tmp = 0;
@@ -256,6 +287,36 @@ COMMAND(sqrt, Sqrt, false, 1, ({
     double tmp = 0;
     tmp = ARG_1;
     ARG_1 = sqrt(tmp);
+}))
+
+COMMAND(sin, Sin, true, 0, ({
+    SPU_FLOAT_TYPE val;
+    double tmp = 0;
+    POP(&val);
+    tmp = val;
+    val = sin(tmp);
+    PUSH(val);
+}))
+
+COMMAND(sin, Sin, false, 1, ({
+    double tmp = 0;
+    tmp = ARG_1;
+    ARG_1 = sin(tmp);
+}))
+
+COMMAND(cos, Cos, true, 0, ({
+    SPU_FLOAT_TYPE val;
+    double tmp = 0;
+    POP(&val);
+    tmp = val;
+    val = cos(tmp);
+    PUSH(val);
+}))
+
+COMMAND(cos, Cos, false, 1, ({
+    double tmp = 0;
+    tmp = ARG_1;
+    ARG_1 = cos(tmp);
 }))
 
 
