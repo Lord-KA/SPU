@@ -121,13 +121,39 @@ COMMAND(div, Div, false, 2, ({
     ARG_1 /= ARG_2;
 }))
 
-COMMAND(pow, Pow, true, 2, ({
+COMMAND(pow, Pow, true, 0, ({
+    SPU_FLOAT_TYPE val_1, val_2, res;
+
+    POP(&val_2);
+    POP(&val_1);
+        
+    res = pow(val_1, val_2);
+
+    PUSH(res);
+}))
+
+COMMAND(pow, Pow, false, 2, ({
     ARG_1 = pow(ARG_1, ARG_2);
 }))
 
 
 COMMAND(mov, Mov, true, 2, ({
     ARG_1 = ARG_2;
+}))
+
+COMMAND(cmovl, CMovL, true, 2, ({
+    if (CMP_REG < 0)
+        ARG_1 = ARG_2;
+}))
+
+COMMAND(cmovg, CMovG, true, 2, ({
+    if (CMP_REG > 0)
+        ARG_1 = ARG_2;
+}))
+
+COMMAND(cmove, CMovE, true, 2, ({
+    if (CMP_REG == 0)
+        ARG_1 = ARG_2;
 }))
 
 COMMAND(out, Out, true, 0, ({

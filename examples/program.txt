@@ -1,5 +1,10 @@
 main:
-    mov ax, 3
-    pow ax, 10
-    out ax
+    mov ax, 0
+    cmp ax, 0
+    jeq smth
+    out 111
+    smth:
+    out 222
     ret
+
+VARS:
