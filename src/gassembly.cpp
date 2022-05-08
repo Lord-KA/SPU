@@ -223,6 +223,9 @@ static gassembly_status gassembly_putOperand(const char *operand, FILE *out, con
         format.isMemCall  = 0;
         format.isRegister = 0;
         format.calculation = gCalc_none;
+        fprintf(logStream, "Lables:\n");
+        for (size_t i = 0; *gassembly_Lables[i] != '\0'; ++i)
+            fprintf(logStream, "Lable = #%s#, Fixup = %d\n", gassembly_Lables[i], (SPU_INTEG_TYPE)gassembly_Fixups[i]); //DEBUG
         GASSEMBLY_ASSERT_LOG(fwrite(&format, sizeof(format), 1, out) == 1, gassembly_status_ErrFile);
 
         char lable[GASSEMBLY_MAX_LINE_SIZE] = {};
@@ -376,7 +379,7 @@ gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out, FILE *newLogStr
     bool fixupRun = true;
 
     size_t line = 1;
-    GASSEMBLY_ASSERT_LOG(getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in), gassembly_status_ErrFile);
+    GASSEMBLY_ASSERT_LOG(!getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in), gassembly_status_ErrFile);
 
     #ifdef EXTRA_VERBOSE
     fprintf(logStream, "line = #%s#\n", buffer);
@@ -391,7 +394,7 @@ gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out, FILE *newLogStr
             fprintf(logStream, "Error occured during pre-assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], buffer);
             return status;
         }
-        GASSEMBLY_ASSERT_LOG(getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in), gassembly_status_ErrFile);
+        GASSEMBLY_ASSERT_LOG(!getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in), gassembly_status_ErrFile);
         ++line;
     }
     fclose(devNull);
@@ -399,7 +402,7 @@ gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out, FILE *newLogStr
     line = 1;
     fixupRun = false;
     fseek(in, startPos, SEEK_SET);
-    GASSEMBLY_ASSERT_LOG(getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in), gassembly_status_ErrFile);
+    GASSEMBLY_ASSERT_LOG(!getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in), gassembly_status_ErrFile);
 
     status = gassembly_putOpening(out, fixupRun, offset, logStream);
     if (status != gassembly_status_OK)
@@ -411,7 +414,7 @@ gassembly_status gassembly_assembleFromFile(FILE *in, FILE *out, FILE *newLogStr
             fprintf(logStream, "Error occured during assembling, error_code = %d (%s)\n>>%s\n", status, gassembly_statusMsg[status], buffer);
             return status;
         }
-        GASSEMBLY_ASSERT_LOG(getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in), gassembly_status_ErrFile);
+        GASSEMBLY_ASSERT_LOG(!getline(buffer, GASSEMBLY_MAX_LINE_SIZE, in), gassembly_status_ErrFile);
         ++line;
     }
 
